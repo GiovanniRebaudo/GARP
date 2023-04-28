@@ -7,8 +7,10 @@ rm(list=ls())
 library(rstudioapi) # version 0.14
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+library(MASS)    # version 7.3-58.2
 library(ggplot2) # version 3.4.2
 theme_set(theme_bw(base_size = 14))
+library(viridis) # version 0.6.2
 set.seed(123)
 
 # Load functions
@@ -25,8 +27,6 @@ Plot1
 
 set.seed(123)
 # Run the MCMC ------------------------------------------------------------
-run_MCMC = TRUE
-
 # GARP hyperparameters
 # Random partition parameters
 p_s       = 0.5 # change to p_v
@@ -37,10 +37,24 @@ mu0       = colMeans(y)
 kappa0    = 0.001
 nu0       = 100 
 Lambda0   = diag(rep(20,P))
-Sigma0    = solve(Lambda0)
 
 # MCMC quantities
-Niter        = 1e5
-burnin       = 4e3
-thin         = 10
-verbose_step = max(round(R/20),1)
+Niter        = 4000
+run_MCMC     = FALSE
+if(run_MCMC){
+  output = GARP_MCMC(data    = data,
+                     mu0     = mu0, 
+                     kappa0  = kappa0,
+                     nu0     = nu0,
+                     Lambda0 = Lambda0,
+                     p_s     = p_s,
+                     Niter   = Niter,
+                     all     = TRUE,
+                     Plot    = TRUE)
+  # save(output,file="output.RData")
+} else {
+  load("output.RData")
+}
+attach(output)
+
+
