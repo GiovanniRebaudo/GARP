@@ -25,11 +25,10 @@ urn_Dir_all_norm_div <- function(freq_minus,beta_DM,KM){
 
 ## Function to compute the edge parameters given the location parameter 
 ## of the two vertices
-qChi_2_99 = qchisq(0.99,2)
-Edge_Parameters = function(unrot_means=unr, var=1, qChi_2=qChi_2_99){
+Edge_Parameters = function(unrot_means=unr, qChi_2=qchisq(0.99,2)){
   diff_mu     = unrot_means[1,]-unrot_means[2,]
   if (all(diff_mu==0)){
-    rot_var     = var/qChi_2*diag(c(1, 1))
+    rot_var     = qChi_2*diag(c(1, 1))
     center_mean = unr[1,]
     print("Error: distance is 0")
     stop()
@@ -40,9 +39,9 @@ Edge_Parameters = function(unrot_means=unr, var=1, qChi_2=qChi_2_99){
       s2_11     = dist_xy^2/4
       s2_22     = 2
       if (diff_mu[1]==0){
-        rot_var = var/qChi_2*diag(c(s2_22, s2_11))
+        rot_var = qChi_2*diag(c(s2_22, s2_11))
       } else {
-        rot_var = var/qChi_2*diag(c(s2_11, s2_22))
+        rot_var = qChi_2*diag(c(s2_11, s2_22))
       }
     } else {
       dist_xy   = sqrt(sum(diff_mu^2))
@@ -60,11 +59,32 @@ Edge_Parameters = function(unrot_means=unr, var=1, qChi_2=qChi_2_99){
                              nrow=2,ncol=2)
       s2_11     = dist_xy^2/4
       s2_22     = 2
-      rot_var   = var/qChi_2*rot_mat %*% diag(c(s2_11,s2_22)) %*% t(rot_mat)
+      rot_var   = qChi_2*rot_mat %*% diag(c(s2_11,s2_22)) %*% t(rot_mat)
     }
   }
   return(list(mean_edge=center_mean,var_edge=rot_var))
 }
+
+# Function to plot Gaussian edge contour plot
+edge_countorplot = function(verices = rbind(c(-2,-2), c(3,3)),
+                    data.grid =expand.grid(X = seq(-3, 4, length.out=800), 
+                                           Y = seq(-3, 4, length.out=800))){
+  par=Edge_Parameters(unrot_means=unr, qChi_2=qChi_2_99)
+  m <- par$mean_edge
+  sigma <- par$var_edge
+  q.samp <- cbind(data.grid, prob = mvtnorm::dmvnorm(data.grid, mean = m, sigma = sigma))
+  Plot=ggplot(q.samp, aes(x=X, y=Y, z=prob)) + 
+    geom_contour(colour = "red", show.legend=F) +
+    coord_fixed(xlim = c(-2, 3), ylim = unr[,2], ratio = 1) +
+    geom_point(data=data.frame(cbind(unr,c(1,1))),aes(x=X1,y=X2,z=X3), size=3)+
+    xlab("Dim 1")+ylab("Dim 2")+labs(color="Vertex")+
+    theme_bw()+theme(legend.position = "right", text = element_text(size=20))
+  print(Plot)
+}
+
+
+
+
 
 ## Function to implement MCMC
 GARP_MCMC = function(data      = data,

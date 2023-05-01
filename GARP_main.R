@@ -21,9 +21,13 @@ y = get(load("Data.RData"))
 P = ncol(y)
 N = nrow(y)
 
-# Data scatter plot (Figure 1 in the manuscript)
-Plot1 = pre_plot(y)
-Plot1
+# Data scatter plot (Figure 1 in the main manuscript)
+Plot_1 = pre_plot(y)
+Plot_1
+
+# Gaussian edge contour plot (Figure S.1 in the supplemantary materials)
+Plot_S1 =edge_countorplot(verices = rbind(c(-2,-2), c(3,3)))
+Plot_S1
 
 set.seed(123)
 # Run the MCMC ------------------------------------------------------------
@@ -56,5 +60,8 @@ if(run_MCMC){
   load("output.RData")
 }
 attach(output)
+
+
+# Plot
 
 
