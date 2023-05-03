@@ -25,8 +25,8 @@ N = nrow(y)
 Plot_1 = pre_plot(y)
 Plot_1
 
-# Gaussian edge contour plot (Figure S.1 in the supplemantary materials)
-Plot_S1 =edge_countorplot(verices = rbind(c(-2,-2), c(3,3)))
+# Gaussian edge contour plot (Figure S.1 in the supplementary materials)
+Plot_S1 =edge_countorplot(vertices = rbind(c(-2,-2), c(3,3)))
 Plot_S1
 
 set.seed(123)

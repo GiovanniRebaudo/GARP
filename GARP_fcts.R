@@ -66,20 +66,21 @@ Edge_Parameters = function(unrot_means=unr, qChi_2=qchisq(0.99,2)){
 }
 
 # Function to plot Gaussian edge contour plot
-edge_countorplot = function(verices = rbind(c(-2,-2), c(3,3)),
+edge_countorplot = function(vertices = rbind(c(-2,-2), c(3,3)),
                     data.grid =expand.grid(X = seq(-3, 4, length.out=800), 
                                            Y = seq(-3, 4, length.out=800))){
-  par=Edge_Parameters(unrot_means=unr, qChi_2=qChi_2_99)
-  m <- par$mean_edge
-  sigma <- par$var_edge
-  q.samp <- cbind(data.grid, prob = mvtnorm::dmvnorm(data.grid, mean = m, sigma = sigma))
+  par    <- Edge_Parameters(unrot_means=vertices, qChi_2=qchisq(0.99,2))
+  m      <- par$mean_edge
+  sigma  <- par$var_edge
+  q.samp <- cbind(data.grid, prob=mvtnorm::dmvnorm(data.grid, mean=m, 
+                                                   sigma=sigma))
   Plot=ggplot(q.samp, aes(x=X, y=Y, z=prob)) + 
     geom_contour(colour = "red", show.legend=F) +
-    coord_fixed(xlim = c(-2, 3), ylim = unr[,2], ratio = 1) +
-    geom_point(data=data.frame(cbind(unr,c(1,1))),aes(x=X1,y=X2,z=X3), size=3)+
+    coord_fixed(xlim = c(-2, 3), ylim = vertices[,2], ratio = 1) +
+    geom_point(data=data.frame(cbind(vertices,c(1,1))),
+               aes(x=X1,y=X2,z=X3), size=3)+
     xlab("Dim 1")+ylab("Dim 2")+labs(color="Vertex")+
     theme_bw()+theme(legend.position = "right", text = element_text(size=20))
-  print(Plot)
 }
 
 
