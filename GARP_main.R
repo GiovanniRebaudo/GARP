@@ -135,30 +135,17 @@ if(run_MCMC){
 }
 attach(output_edge)
 
+
+K_T_max             = c_clust_data_stable*(c_clust_data_stable-1)/2
 data_plot           = data.frame(y[is_i_stable,])
-Main_phases         = factor(clust_VI_stable)
-levels(Main_phases) = paste0("V", 1:c_clust_data_stable)
-colnames(data_plot) = c("MDS1","MDS2")
+data_plot_edge      = data.frame(y[!is_i_stable,])
 
-data_plot_edge           = data.frame(y[!is_i_stable,])
-colnames(data_plot_edge) = c("MDS1","MDS2")
-Plot = ggplot()+ theme_bw() +
-  labs(color="Vertex")+ 
-  geom_point(data=data_plot,aes(x=MDS1, y=MDS2,col=Main_phases))+
-  geom_point(data=data_plot_edge,aes(x=MDS1, y=MDS2), col="black")+
-  theme(legend.position = "right", text = element_text(size=20))
-
-K_T_max = c_clust_data_stable*(c_clust_data_stable-1)/2
-
-
-Segment_data           = matrix(nrow=K_T_max, ncol=c_clust_data_stable)
+Segment_data           = matrix(nrow=K_T_max,ncol=4)
 colnames(Segment_data) = c("x","y","xend","yend")
 
 for(ind in 1:K_T_max){
-  Segment_data[ind,] = c(mu_stable_map[Map_k_edge[ind,1],1], 
-                         mu_stable_map[Map_k_edge[ind,1],2],
-                         mu_stable_map[Map_k_edge[ind,2],1], 
-                         mu_stable_map[Map_k_edge[ind,2],2])
+  Segment_data[ind,] = c(mu_stable_map[Map_k_edge[ind,1],1], mu_stable_map[Map_k_edge[ind,1],2],
+                         mu_stable_map[Map_k_edge[ind,2],1], mu_stable_map[Map_k_edge[ind,2],2])
 }
 
 Seg1 = data.frame(t(Segment_data[1,]))
@@ -169,19 +156,30 @@ Seg5 = data.frame(t(Segment_data[5,]))
 Seg6 = data.frame(t(Segment_data[6,]))
 
 Alpha = table(cl_memb_edge_out[seq_thin,])
-Alpha = Alpha/max(Alpha)*20
+Alpha = Alpha/max(Alpha)*100
+
+
+Main_phases = factor(clust_VI_stable)
+Edge        = factor(apply(cl_memb_edge_out[seq_thin,],2,Mode))
+
+all_phases               = c(Main_phases, Edge)
+colnames(data_plot_edge) = c("MDS1", "MDS2")
+data_plot_all            = rbind(data_plot,data_plot_edge)
+levels(all_phases)       = c("1", "2", "3", "4", "(1,2)", "(2,3)", "(3,4)")
+data_plot_all$phases     = all_phases
+data_plot_all$Vi         = factor(c(rep(1,length(Main_phases)), rep(0,length(Edge))))
 
 Plot = ggplot() +
-  geom_point(data=data_plot,aes(x=MDS1, y=MDS2,col=Main_phases))+
+  geom_point(data=data_plot_all,aes(x=MDS1, y=MDS2,col=all_phases, shape = Vi))+
   geom_segment(data=Seg1, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[1],size=1)+
   geom_segment(data=Seg2, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[2],size=1)+
   geom_segment(data=Seg3, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[3],size=1)+
   geom_segment(data=Seg4, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[4],size=1)+
   geom_segment(data=Seg5, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[5],size=1)+
   geom_segment(data=Seg6, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[6],size=1)+
-  xlab("Dim 1")+ylab("Dim 2")+labs(color="Vertex")+
+  xlab("Dim 1")+ylab("Dim 2")+labs(color="Z_i", shape="V_i")+
   theme_bw()+theme(legend.position = "right", text = element_text(size=20))
 
-CairoPNG(filename = '../Image/Inference_Mice_Orange.png', width = 500, height = 400)
+# CairoPNG(filename = '../Image/Inference_Scatter_Mice.png', width = 500, height = 400)
 Plot
-invisible(dev.off())
+# invisible(dev.off())
