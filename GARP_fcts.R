@@ -2,14 +2,13 @@
 
 ## Function for preliminary scatter plot
 pre_plot = function(data){
-  data_plot = data.frame(Data)
-  ggplot(data_plot, aes(x=MDS1,y=MDS2))+geom_point()+
-  xlab("Dim 1")+ylab("Dim 2")+theme_bw()+
-  theme(legend.position = "right", text = element_text(size=20))
+  data_plot = data.frame(y)
+  colnames(data_plot) = c("MDS1","MDS2")
+  Plot = ggplot(data_plot, aes(x=MDS1,y=MDS2))+geom_point()
 }
 
 ## Function to compute the urn scheme of the Gnedin process
-urn_GN_norm <- function(freq_minus, gamma_GN, K_S = K_S){
+urn_GN_norm <- function(freq_minus,gamma_GN, K_S){
   #  K_S<-length(unique(freq_minus))
   tot_freq_minus = sum(freq_minus)
   unorm_out      = c((freq_minus+1)*(tot_freq_minus-K_S+gamma_GN),
@@ -23,12 +22,33 @@ urn_Dir_all_norm_div <- function(freq_minus,beta_DM,KM){
   return(unorm_out/sum(unorm_out))
 }
 
+# Reorder rows and columns (observations) of a dissimilarity matrix intra groups 
+# and possibly reorder also the groups (batch of observations)
+reorder_dismat = function(dismat, groups, order.groups=NULL){
+  # Use correlation between variables as distance
+  order.dis   = integer(0)
+  J           = length(unique(groups))
+  if(is.null(order.groups)){
+    order.j   = 1:J
+  } else {
+    order.j   = order.groups
+  }
+  for (j in order.j){
+    groups.j  = which(groups==j)
+    dd        = as.dist((1-dismat[groups.j, groups.j])/2)
+    hc        = hclust(dd)
+    order.dis = c(order.dis, hc$order+length(order.dis))
+  }
+  dismat      = dismat[order.dis, order.dis]
+  dismat      = dismat[nrow(dismat):1,]
+}
+
 ## Function to compute the edge parameters given the location parameter 
 ## of the two vertices
-Edge_Parameters = function(unrot_means=unr, qChi_2=qchisq(0.99,2)){
+Edge_Parameters = function(unrot_means=unr, var=1, qChi_2=qchisq(0.99,2)){
   diff_mu     = unrot_means[1,]-unrot_means[2,]
   if (all(diff_mu==0)){
-    rot_var     = qChi_2*diag(c(1, 1))
+    rot_var     = 1/qChi_2*diag(c(1, 1))
     center_mean = unr[1,]
     print("Error: distance is 0")
     stop()
@@ -38,10 +58,11 @@ Edge_Parameters = function(unrot_means=unr, qChi_2=qchisq(0.99,2)){
       dist_xy   = sqrt(sum(diff_mu^2))
       s2_11     = dist_xy^2/4
       s2_22     = 2
+      
       if (diff_mu[1]==0){
-        rot_var = qChi_2*diag(c(s2_22, s2_11))
+        rot_var = 1/qChi_2*diag(c(s2_22, s2_11))
       } else {
-        rot_var = qChi_2*diag(c(s2_11, s2_22))
+        rot_var = 1/qChi_2*diag(c(s2_11, s2_22))
       }
     } else {
       dist_xy   = sqrt(sum(diff_mu^2))
@@ -59,7 +80,7 @@ Edge_Parameters = function(unrot_means=unr, qChi_2=qchisq(0.99,2)){
                              nrow=2,ncol=2)
       s2_11     = dist_xy^2/4
       s2_22     = 2
-      rot_var   = qChi_2*rot_mat %*% diag(c(s2_11,s2_22)) %*% t(rot_mat)
+      rot_var   = 1/qChi_2*rot_mat %*% diag(c(s2_11,s2_22)) %*% t(rot_mat)
     }
   }
   return(list(mean_edge=center_mean,var_edge=rot_var))
@@ -83,10 +104,6 @@ edge_countorplot = function(vertices = rbind(c(-2,-2), c(3,3)),
     theme_bw()+theme(legend.position = "right", text = element_text(size=20))
 }
 
-
-
-
-
 ## Function to implement MCMC
 GARP_MCMC = function(data      = data,
                      mu0       = mu0, 
@@ -96,110 +113,110 @@ GARP_MCMC = function(data      = data,
                      p_s       = p_s,
                      Niter     = Niter,
                      Plot      = TRUE,
-                     all       = TRUE){
-  if(all==TRUE){
+                     acc_p     = FALSE){
+  verbose_step = max(round(Niter/20),1)
     
-    verbose_step = max(round(Niter/20),1)
-    
-    # Quantities where we save MCMC output
-    stable_out           = matrix(nrow=Niter, ncol=N)
-    Mu_stable_out        = array(dim=c(N,P,Niter))
-    Sigma_stable_out     = array(dim=c(P,P,N,Niter))
-    Mu_edge_out          = array(dim=c(N,P,Niter))
-    Sigma_edge_out       = array(dim=c(P,P,N,Niter))
-    cl_memb_stable_out   = matrix(nrow=Niter, ncol=N)
-    cl_memb_all_out      = matrix(nrow=Niter, ncol=N)
-    n_clus_out           = matrix(nrow=Niter, ncol=2)
-    
-    # Compute fixed quantities for MCMC
-    Sigma0      = solve(Lambda0)
-    nu_new      = nu0+1
-    kappa_new   = kappa0+1
-    Scale_t_new = Sigma0*kappa_new/((nu0-P+1)*kappa0)
-    df_t_new    = nu0-P+1
-    
-    # Compute outside MCMC p_knew: marginal likelihood of the single observations
-    dmvt_new       = dmvt_new2 = double(N)
-    for (i in 1:N){
-      y_i          = y[i,]
-      dmvt_new[i]  = LaplacesDemon::dmvt(y_i, mu=mu0, S=Scale_t_new, df=df_t_new)
+  # Quantities where we save MCMC output
+  stable_out         = matrix(nrow=Niter, ncol=N)
+  Mu_stable_out      = array(dim=c(N,P,Niter))
+  Sigma_stable_out   = array(dim=c(P,P,N,Niter))
+  Mu_edge_out        = array(dim=c(N,P,Niter))
+  if(acc_p){
+    Acceptance_out   = matrix(nrow=Niter, ncol=N)
+  }
+  Sigma_edge_out     = array(dim=c(P,P,N,Niter))
+  cl_memb_stable_out = matrix(nrow=Niter, ncol=N)
+  cl_memb_all_out    = matrix(nrow=Niter, ncol=N)
+  cl_memb_edge_out   = matrix(nrow=Niter, ncol=N)
+  n_clus_out         = matrix(nrow=Niter, ncol=2)
+  
+  # Compute fixed quantities for MCMC
+  Sigma0      = solve(Lambda0)
+  nu_new      = nu0+1
+  kappa_new   = kappa0+1
+  Scale_t_new = Sigma0*kappa_new/((nu0-P+1)*kappa0)
+  df_t_new    = nu0-P+1
+  
+  # Compute outside MCMC p_knew: marginal likelihood of the single obs
+  dmvt_new      = dmvt_new2 = double(N)
+  for (i in 1:N){
+    y_i         = y[i,]
+    dmvt_new[i] = LaplacesDemon::dmvt(y_i, mu=mu0, S=Scale_t_new, df=df_t_new)
+  }
+  
+  # Cluster memberships initialization
+  K_T            = 0
+  K_S            = 10
+  K_T_max        = K_S*(K_S-1)/2
+  cl_memb_stable = kmeans(y, K_S,iter.max=25, nstart = 150)$cluster
+  cl_memb_stable = plyr::mapvalues(cl_memb_stable, 
+                                   from=unique(cl_memb_stable), to=1:K_S)
+  stable         = rep(1,N)
+  if(Plot){
+    plot(y, col=cl_memb_stable, pch=16, xlab="dim 1", ylab="dim 2", 
+         main="Equal Scale", xlim=c(min(y),max(y)), ylim=c(min(y),max(y)))
+  }
+  
+  # Unique kernel parameters bivariate Gaussian
+  Sigma_stable   = array(0,dim=c(P,P,K_S))
+  Mu_stable      = matrix(0,nrow=K_S, ncol=P)
+  
+  # Initialize stable parameters
+  for (ks in 1:K_S){
+    i_ks             = which(cl_memb_stable==ks)
+    n_ks             = length(i_ks)
+    y_iks            = y[i_ks,]
+    if(n_ks==1) {
+      mean.y_ks      = y_iks
+      S_ks           = 0
+      kappa_kks      = kappa_new
+      nu_ks          = nu_new
+    } else if(n_ks==0){
+      print("error K_S")
+      stop()
+    } else {
+      mean.y_ks      = colMeans(y_iks)
+      S_ks           = var(y_iks)*(n_ks-1) 
+      kappa_ks       = kappa0+n_ks
+      nu_ks          = n_ks+nu0
     }
-    
-    # Cluster memberships initialization
-    K_T            = 0
-    K_S            = 10
-    K_T_max        = K_S*(K_S-1)/2
-    cl_memb_stable = kmeans(y, K_S,iter.max=25, nstart = 150)$cluster
-    cl_memb_stable = plyr::mapvalues(cl_memb_stable, from=unique(cl_memb_stable), 
-                                     to=1:K_S)
-    stable         = rep(1,N)
-    if(Plot){
-      plot(y, col=cl_memb_stable, pch=16, xlab="dim 1", ylab="dim 2",
-           main="Equal Scale", xlim=c(min(y),max(y)), ylim=c(min(y),max(y)))
-    }
-    
-    # Unique kernel parameters Bivariate Gaussian
-    Sigma_stable   = array(0,dim=c(P,P,K_S))
-    Mu_stable      = matrix(0,nrow=K_S, ncol=P)
-    
-    # Initialize stable parameters
-    for (ks in 1:K_S){
-      i_ks             = which(cl_memb_stable==ks)
-      n_ks             = length(i_ks)
-      y_iks            = y[i_ks,]
-      if(n_ks==1) {
-        mean.y_ks      = y_iks
-        S_ks           = 0
-        kappa_kks      = kappa_new
-        nu_ks          = nu_new
-      } else if(n_ks==0){
-        print("error K_S")
-        stop()
-      } else {
-        mean.y_ks      = colMeans(y_iks)
-        S_ks           = var(y_iks)*(n_ks-1)
-        kappa_ks       = kappa0+n_ks
-        nu_ks          = n_ks+nu0
-      }
       
-      Lambda_Sig_ks       = solve(Lambda0 + S_ks + 
-                                    kappa0*n_ks/kappa_ks*(mean.y_ks-mu0)%*%
-                                    t((mean.y_ks-mu0)))
-      mu_muks             = (n_ks*mean.y_ks + kappa0*mu0)/kappa_ks
+    Lambda_Sig_ks       = solve(Lambda0 + S_ks + kappa0*n_ks/kappa_ks*
+                                  (mean.y_ks-mu0)%*%t((mean.y_ks-mu0)))
+    mu_muks             = (n_ks*mean.y_ks + kappa0*mu0)/kappa_ks
       
-      Sigma_ks            = bayesm::rwishart(nu=nu_ks, V=Lambda_Sig_ks)$IW
-      Sigma_stable[,,ks]  = Sigma_ks
-      Mu_stable[ks,]      = mvrnorm(n=1, mu=mu_muks, Sigma=Sigma_ks/kappa_ks)
+    Sigma_ks            = bayesm::rwishart(nu=nu_ks, V=Lambda_Sig_ks)$IW
+    Sigma_stable[,,ks]  = Sigma_ks
+    Mu_stable[ks,]      = mvrnorm(n=1, mu=mu_muks, Sigma=Sigma_ks/kappa_ks)
+  }
+    
+  # Compute edge parameters
+  K_T_max     = K_S*(K_S-1)/2
+  Map_k_edge  = matrix(nrow=K_T_max,ncol=2)
+  Sigma_edge  = array(0,dim=c(P,P,K_T_max))
+  Mu_edge     = matrix(0,nrow=K_T_max, ncol=P)
+  
+  kt = 1
+  for (k_s1 in 2:K_S){
+    for (k_s2 in 1:(k_s1-1)){
+      Map_k_edge[kt,]  = c(k_s1,k_s2)
+      unr              = Mu_stable[c(k_s1,k_s2),]
+      par_out          = Edge_Parameters(unrot_means=unr)
+      Mu_edge[kt,]     = par_out$mean_edge
+      Sigma_edge[,,kt] = par_out$var_edge
+      kt               = kt+1
     }
+  }
     
-    # Compute edge parameters
-    K_T_max     = K_S*(K_S-1)/2
-    Map_k_edge  = matrix(nrow=K_T_max,ncol=2)
-    Sigma_edge  = array(0,dim=c(P,P,K_T_max))
-    Mu_edge     = matrix(0,nrow=K_T_max, ncol=P)
-    
-    kt = 1
-    for (k_s1 in 2:K_S){
-      for (k_s2 in 1:(k_s1-1)){
-        Map_k_edge[kt,]  = c(k_s1,k_s2)
-        unr              = Mu_stable[c(k_s1,k_s2),]
-        par_out          = Edge_Parameters(unrot_means=unr, qChi_2 = qChi_2_99)
-        Mu_edge[kt,]     = par_out$mean_edge
-        Sigma_edge[,,kt] = par_out$var_edge
-        kt               = kt+1
-      }
-    }
-    
-    cl_memb_edge_mat = matrix(ncol=2,nrow=0)
-    cl_memb_all_mat  = cbind(cl_memb_stable,cl_memb_stable)
-    cl_memb_edge     = integer(0)
-    
-    cl_memb_all      = cl_memb_stable
-    sorted_obs = 1:N
+  cl_memb_edge_mat = matrix(ncol=2,nrow=0)
+  cl_memb_all_mat  = cbind(cl_memb_stable,cl_memb_stable)
+  cl_memb_edge     = integer(0)
+  cl_memb_all      = cl_memb_stable
+  sorted_obs       = 1:N
     
   # Gibbs
   for (r in 1:Niter){
-    # Sample cluster membership and sample
+    # Sample cluster memberships
     N_S          = sum(stable)
     N_T          = N - N_S
     K_S_plus     = K_S
@@ -211,14 +228,16 @@ GARP_MCMC = function(data      = data,
     # sample cell belonging to transition phases before for efficiency
     obs_edge_old     = which(stable==0)
     obs_stable_old   = which(stable==1)
-    
     sorted_obs = c(obs_edge_old,obs_stable_old)
-    
     n_edge_all = integer(K_T_max_plus)
     
     # If there exist occupied transition phase
     if(N_T>0){
       stable_i_old          = 0
+      
+      if(acc_p){
+        Acceptance_out[r,1:N_T] = 1
+      }
       
       # i belongs to a transition phase in the previous iteration 
       # (the first ones to be sampled)
@@ -246,11 +265,13 @@ GARP_MCMC = function(data      = data,
         
         # we use dmNorm. It can be faster to write our function to avoid 
         # repeating matrix operation on Sigma_mat every time
-        b_minus_i_stable = p_s*urn_GN_norm(freq_minus=n_stable_minus_i, 
-                                           gamma_GN, K_S) *
-          c(mniw::dmNorm(y_i, mu=Mu_stable, Sigma=Sigma_stable), dmvt_new[i_stable])
+        b_minus_i_stable =p_s*urn_GN_norm(freq_minus=n_stable_minus_i,
+                                          gamma_GN, K_S)*
+          c(mniw::dmNorm(y_i, mu=Mu_stable, Sigma=Sigma_stable), 
+            dmvt_new[i_stable])
         
-        b_minus_i_edge = (1-p_s)*urn_Dir_all_norm_div(n_edge_minus_i,alpha_Dir,KM = K_S)*
+        b_minus_i_edge = (1-p_s)*urn_Dir_all_norm_div(n_edge_minus_i,
+                                                      alpha_Dir,KM = K_S)*
           mniw::dmNorm(y_i, mu=Mu_edge, Sigma=Sigma_edge)
         
         b_minus_i_all     = c(b_minus_i_stable,b_minus_i_edge)
@@ -259,7 +280,8 @@ GARP_MCMC = function(data      = data,
                                        prob=b_minus_i_all, useHash = F)
         stable_i          = ifelse(cl_memb_i<K_S_plus+2,1,0)
         
-        # If the cell i was previously in a transition phase moves to a stable one
+        # If the cell i was previously in a transition phase moves 
+        # to a stable one      
         if (stable_i == 1){
           stable[i_edge] = stable_i
           
@@ -269,26 +291,30 @@ GARP_MCMC = function(data      = data,
           # If we open a new stable cluster
           if (cl_memb_i == (K_S_plus+1)){
             # Sample new stable parameter
-            Lambda_Sig_new         = solve(Lambda0 + kappa0/kappa_new * (y_i-mu0)%*%t(y_i-mu0))
+            Lambda_Sig_new         = solve(Lambda0 + kappa0/kappa_new * 
+                                             (y_i-mu0)%*%t(y_i-mu0))
             Mean_mu_new            = (kappa0*mu0+y_i)/kappa_new
             
-            Sigma_stable_new       = bayesm::rwishart(nu=nu_new , V=Lambda_Sig_new)$IW
-            Mu_stable_new          = mvtnorm::rmvnorm(n=1, mean=Mean_mu_new, sigma=Sigma_stable_new/kappa_new)
+            Sigma_stable_new       = bayesm::rwishart(nu=nu_new, 
+                                                      V=Lambda_Sig_new)$IW
+            Mu_stable_new          = mvtnorm::rmvnorm(n=1, mean=Mean_mu_new, 
+                                                      sigma=Sigma_stable_new/kappa_new)
             
             Mu_stable              = rbind(Mu_stable, Mu_stable_new)
-            Sigma_stable           = array(c(Sigma_stable, Sigma_stable_new), dim = c(2, 2, K_S_plus+1))
+            Sigma_stable           = array(c(Sigma_stable, Sigma_stable_new), 
+                                           dim = c(2, 2, K_S_plus+1))
             
             # Compute new edge parameters associated 
             # (we are computing also useless one: it can be made slightly faster)
             # Save new parameter values
-            kt                       = K_T_max_plus
-            Mu_edge_temp             = Mu_edge
-            Map_k_edge_temp          = Map_k_edge
-            Sigma_edge_temp          = Sigma_edge
+            kt                     = K_T_max_plus #nrow(Map_k_edge)
+            Mu_edge_temp           = Mu_edge
+            Map_k_edge_temp        = Map_k_edge
+            Sigma_edge_temp        = Sigma_edge
             
-            Map_k_edge               = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
-            Mu_edge                  = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
-            Sigma_edge               = array(0,dim=c(P,P,K_T_max_plus+K_S_plus))
+            Map_k_edge             = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
+            Mu_edge                = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
+            Sigma_edge             = array(0,dim=c(P,P,K_T_max_plus+K_S_plus))
             
             Mu_edge[1:K_T_max_plus,]     = Mu_edge_temp
             Map_k_edge[1:K_T_max_plus,]  = Map_k_edge_temp
@@ -298,25 +324,25 @@ GARP_MCMC = function(data      = data,
               kt                 = kt+1
               Map_k_edge[kt,]    = c(K_S_plus+1,k_s)
               unr                = rbind(Mu_stable[k_s,],Mu_stable_new)
-              par_out            = Edge_Parameters(unrot_means=unr, 
-                                                   qChi_2=qChi_2_99)
+              par_out            = Edge_Parameters(unrot_means=unr)
               Mu_edge[kt,]       = par_out$mean_edge
               Sigma_edge[,,kt]   = par_out$var_edge
             }
             
-            K_S                    = K_S+1
-            K_S_plus               = K_S_plus+1
-            K_T_max                = K_S*(K_S-1)/2
-            K_T_max_plus           = K_S_plus*(K_S_plus-1)/2
+            K_S                  = K_S+1
+            K_S_plus             = K_S_plus+1
+            K_T_max              = K_S*(K_S-1)/2
+            K_T_max_plus         = K_S_plus*(K_S_plus-1)/2
             
             n_edge_all            = integer(K_T_max_plus)
             n_edge_occ            = tabulate(cl_memb_edge)
             K_T_occ               = length(n_edge_occ)
             n_edge_all[1:K_T_occ] = n_edge_occ
             n_edge_minus_i        = n_edge_all
-          } # If cell i remains in a transition phase
+          } 
+          # If cell i remains in a transition phase
         } else if (stable_i == 0){
-          cl_memb_i_edge      = cl_memb_i - (K_S_plus+1)
+          cl_memb_i_edge             = cl_memb_i - (K_S_plus+1)
           
           # If cell i remains in the transition phase but changes edge                 
           if (cl_memb_i_edge!=cl_memb_edge_i_old){
@@ -361,17 +387,21 @@ GARP_MCMC = function(data      = data,
           n_edge_all[1:K_pos] = n_edge_minus_i
         }
       }
-      n_edge_minus_i         = n_edge_all
+      n_edge_minus_i                         = n_edge_all
       
-      cl_memb_stable_i_old                   = cl_memb_all[i_stable]
-      n_stable_i                             = n_stable_minus_i[cl_memb_stable_i_old] 
+      cl_memb_stable_i_old = cl_memb_all[i_stable]
+      n_stable_i = n_stable_minus_i[cl_memb_stable_i_old] 
       n_stable_minus_i[cl_memb_stable_i_old] = n_stable_i - 1
       # if we are emptying a stable phase
       if (n_stable_i==1){
         cl_memb_edge_mat = cl_memb_all_mat[obs_edge,]
         # if the stable phase has an edge associated cannot be emptied
         if(any(cl_memb_edge_mat==cl_memb_stable_i_old)){
+          if(acc_p){
+            Acceptance_out[r, N_T+i] = 0
+          }
           break_ind = T
+          
         } else {
           # print(K_S-1)
           # We have emptied a stable phase
@@ -383,8 +413,11 @@ GARP_MCMC = function(data      = data,
       }
       
       if(!break_ind){
+        if(acc_p){
+          Acceptance_out[r, N_T+i] = 1
+        }
         # we use dmNorm. It can be faster to write our function to avoid 
-        # repeating matrix operation on Sigma_mat every time 
+        # repeating matrix operation on Sigma_mat every time
         if(ind_empty){
           # It can be made more efficient
           b_minus_i_stable   = double(K_S_plus+1)
@@ -399,26 +432,32 @@ GARP_MCMC = function(data      = data,
             c(mniw::dmNorm(y_i, mu=Mu_stable[n_i_pos_stable,], 
                            Sigma=Sigma_stable[,,n_i_pos_stable]),
               dmvt_new[i_stable])
-          # It can be made more efficient
-          b_minus_i_edge[n_i_pos_edge] = (1-p_s)*urn_Dir_all_norm_div(n_edge_minus_i[n_i_pos_edge],alpha_Dir,KM = K_S)*
-            mniw::dmNorm(y_i, mu=Mu_edge[n_i_pos_edge,], Sigma=Sigma_edge[,,n_i_pos_edge])
+          
+          b_minus_i_edge[n_i_pos_edge] = (1-p_s)*urn_Dir_all_norm_div(
+            n_edge_minus_i[n_i_pos_edge],alpha_Dir,KM=K_S)*
+            mniw::dmNorm(y_i, mu=Mu_edge[n_i_pos_edge,],
+                         Sigma=Sigma_edge[,,n_i_pos_edge])
           
         } else {
-          b_minus_i_stable = p_s*urn_GN_norm(freq_minus=n_stable_minus_i, gamma_GN, K_S) *
-            c(mniw::dmNorm(y_i, mu=Mu_stable, Sigma=Sigma_stable), dmvt_new[i_stable])
-          # It can be made more efficient
-          b_minus_i_edge = (1-p_s)*urn_Dir_all_norm_div(n_edge_minus_i,alpha_Dir,KM = K_S)*
+          b_minus_i_stable = p_s*urn_GN_norm(freq_minus=n_stable_minus_i, 
+                                             gamma_GN, K_S) *
+            c(mniw::dmNorm(y_i, mu=Mu_stable, Sigma=Sigma_stable), 
+              dmvt_new[i_stable])
+          
+          b_minus_i_edge = (1-p_s)*urn_Dir_all_norm_div(n_edge_minus_i,alpha_Dir,
+                                                        KM=K_S)*
             mniw::dmNorm(y_i, mu=Mu_edge, Sigma=Sigma_edge)
         }
         
         b_minus_i_all     = c(b_minus_i_stable,b_minus_i_edge)
         
-        cl_memb_i         = sample.int(n=K_T_max_plus+K_S_plus+1,size=1, prob=b_minus_i_all, useHash = F)
+        cl_memb_i         = sample.int(n=K_T_max_plus+K_S_plus+1,size=1, 
+                                       prob=b_minus_i_all, useHash = F)
         stable_i          = ifelse(cl_memb_i<(K_S_plus+2),1,0)
         
-        # If the cell i was previously in a stable phase (and remain stable)
+        # If the cell i was previously in a stable phase (and remains stable)
         if (stable_i == 1){
-          # If cell i change (stable) cluster
+          # If cell i changes (stable) cluster
           if(cl_memb_stable_i_old!=cl_memb_i){
             
             cl_memb_all[i_stable]  = cl_memb_i
@@ -437,15 +476,16 @@ GARP_MCMC = function(data      = data,
               Sigma_stable           = array(c(Sigma_stable, Sigma_stable_new), dim = c(2, 2, K_S_plus+1))
               
               # Compute new edge parameters associated 
-              # (we are computing also useless one: it can be made slightly faster)
-              kt                       = K_T_max_plus
-              Mu_edge_temp             = Mu_edge
-              Map_k_edge_temp          = Map_k_edge
-              Sigma_edge_temp          = Sigma_edge
+              # (we are computing also useless ones: 
+              # it can be made slightly faster)
+              kt              = K_T_max_plus
+              Mu_edge_temp    = Mu_edge
+              Map_k_edge_temp = Map_k_edge
+              Sigma_edge_temp = Sigma_edge
               
-              Map_k_edge               = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
-              Mu_edge                  = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
-              Sigma_edge               = array(0,dim=c(P,P,K_T_max_plus+K_S_plus))
+              Map_k_edge      = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
+              Mu_edge         = matrix(nrow=K_T_max_plus+K_S_plus, ncol=P)
+              Sigma_edge      = array(0,dim=c(P,P,K_T_max_plus+K_S_plus))
               
               Mu_edge[1:K_T_max_plus,]     = Mu_edge_temp
               Map_k_edge[1:K_T_max_plus,]  = Map_k_edge_temp
@@ -455,7 +495,7 @@ GARP_MCMC = function(data      = data,
                 kt                 = kt+1
                 Map_k_edge[kt,]    = c(cl_memb_i,k_s)
                 unr                = rbind(Mu_stable[k_s,],Mu_stable_new)
-                par_out            = Edge_Parameters(unrot_means=unr, qChi_2 = qChi_2_99)
+                par_out            = Edge_Parameters(unrot_means=unr)
                 
                 Mu_edge[kt,]       = par_out$mean_edge
                 Sigma_edge[,,kt]   = par_out$var_edge
@@ -484,11 +524,15 @@ GARP_MCMC = function(data      = data,
     obs_stable                 = which(stable==1)
     cl_memb_stable             = cl_memb_all[obs_stable]
     cl_memb_stable_uni         = unique(cl_memb_stable)
-    cl_memb_stable             = plyr::mapvalues(cl_memb_stable,from=cl_memb_stable_uni,to=1:K_S)
+    cl_memb_stable             = plyr::mapvalues(cl_memb_stable,
+                                                 from=cl_memb_stable_uni,
+                                                 to=1:K_S)
     
-    cl_memb_all_mat            = plyr::mapvalues(cl_memb_all_mat,from=cl_memb_stable_uni,to=1:K_S)
+    cl_memb_all_mat            = plyr::mapvalues(cl_memb_all_mat,
+                                                 from=cl_memb_stable_uni,
+                                                 to=1:K_S)
     
-    # Check how to remap function that connect edge and stable phases
+    # Remap edge and stable phases
     obs_edge                      = which(stable==0)
     cl_memb_edge                  = cl_memb_all[obs_edge]
     cl_memb_edge_uni              = unique(cl_memb_edge)
@@ -513,7 +557,7 @@ GARP_MCMC = function(data      = data,
       for (k_s2 in 1:(k_s1-1)){
         Map_k_edge[kt,]  = c(k_s1,k_s2)
         unr              = Mu_stable[c(k_s1,k_s2),]
-        par_out          = Edge_Parameters(unrot_means=unr, qChi_2 = qChi_2_99)
+        par_out          = Edge_Parameters(unrot_means=unr)
         Mu_edge[kt,]     = par_out$mean_edge
         Sigma_edge[,,kt] = par_out$var_edge
         kt               = kt+1
@@ -523,13 +567,18 @@ GARP_MCMC = function(data      = data,
     # Finish to remap
     K_T                           = nrow(cl_memb_edge_mat_uni)
     if (K_T>0){
-      cl_memb_edge_mat_uni        = unique(t(apply(cl_memb_edge_mat_uni, 1,function(x){sort(x,decreasing = T)})))
+      cl_memb_edge_mat_uni        = unique(t(apply(cl_memb_edge_mat_uni, 1,
+                                                   function(x){sort(x,
+                                                               decreasing=T)})))
       K_T                         = nrow(cl_memb_edge_mat_uni)
       cl_memb_edge_uni_new        = double(K_T)
       for(k_t in 1:K_T){
-        cl_memb_edge_uni_new[k_t] = which(apply(Map_k_edge, 1, function(x) {all(x==cl_memb_edge_mat_uni[k_t,])}))
+        cl_memb_edge_uni_new[k_t] = which(apply(Map_k_edge, 1, function(x) {
+          all(x==cl_memb_edge_mat_uni[k_t,])}))
       }
-      cl_memb_edge                = plyr::mapvalues(cl_memb_edge,from=cl_memb_edge_uni,to=cl_memb_edge_uni_new)
+      cl_memb_edge                = plyr::mapvalues(cl_memb_edge,
+                                                    from=cl_memb_edge_uni,
+                                                    to=cl_memb_edge_uni_new)
     }
     
     
@@ -547,26 +596,26 @@ GARP_MCMC = function(data      = data,
         kappa_ks       = kappa_new
         nu_ks          = nu_new
       } else {
-        mean.y_ks         = colMeans(y_iks)
-        S_ks              = var(y_iks)*(n_ks-1) 
-        kappa_ks          = kappa0+n_ks
-        nu_ks             = n_ks+nu0
+        mean.y_ks      = colMeans(y_iks)
+        S_ks           = var(y_iks)*(n_ks-1)
+        kappa_ks       = kappa0+n_ks
+        nu_ks          = n_ks+nu0
       }
-      Lambda_Sig_ks       = solve(Lambda0 + S_ks + kappa0*n_ks/kappa_ks*
-                                    (mean.y_ks-mu0)%*%t((mean.y_ks-mu0)))
-      mu_muks             = (n_ks*mean.y_ks + kappa0*mu0)/kappa_ks
+      Lambda_Sig_ks    = solve(Lambda0 + S_ks + kappa0*n_ks/kappa_ks*
+                                 (mean.y_ks-mu0)%*%t((mean.y_ks-mu0)))
+      mu_muks          = (n_ks*mean.y_ks + kappa0*mu0)/kappa_ks
       
-      Sigma_ks_prop       = bayesm::rwishart(nu=nu_ks, V=Lambda_Sig_ks)$IW
-      Mu_ks_prop          = mvrnorm(n=1, mu=mu_muks, Sigma=Sigma_ks/kappa_ks)
+      Sigma_ks_prop    = bayesm::rwishart(nu=nu_ks, V=Lambda_Sig_ks)$IW
+      Mu_ks_prop       = mvrnorm(n=1, mu=mu_muks, Sigma=Sigma_ks/kappa_ks)
       
-      Mu_edge_prop        = Mu_edge
-      Sigma_edge_prop     = Sigma_edge
+      Mu_edge_prop     = Mu_edge
+      Sigma_edge_prop  = Sigma_edge
       # Compute acceptance probability
-      edge_ks             = which(((Map_k_edge[,1]==ks)+(Map_k_edge[,2]==ks))==1)
-      edge_ks             = edge_ks[edge_ks %in% cl_memb_edge]
+      edge_ks          = which(((Map_k_edge[,1]==ks)+(Map_k_edge[,2]==ks))==1)
+      edge_ks          = edge_ks[edge_ks %in% cl_memb_edge]
       
       if (length(edge_ks)>0){
-        log_rho_acc         = 0
+        log_rho_acc      = 0
         for (kedge in edge_ks){
           
           i_kedge        = which(cl_memb_all==-kedge)
@@ -574,9 +623,9 @@ GARP_MCMC = function(data      = data,
           y_i_kedge      = y[i_kedge,]
           
           if(n_kedge==1) {
-            mean_y_kedge      = y_i_kedge
+            mean_y_kedge = y_i_kedge
           } else {
-            mean_y_kedge      = colMeans(y_i_kedge)
+            mean_y_kedge = colMeans(y_i_kedge)
           }
           
           # Compute proposed new edge parameters
@@ -584,7 +633,7 @@ GARP_MCMC = function(data      = data,
           k_s2                     = k_s_k_s2[k_s_k_s2!=ks]
           
           unr                      = Mu_stable[k_s_k_s2,]
-          par_out                  = Edge_Parameters(unrot_means=unr, qChi_2=qChi_2_99)
+          par_out                  = Edge_Parameters(unrot_means=unr)
           
           Mu_kedge_prop            = par_out$mean_edge
           Sigma_kedge_prop         = par_out$var_edge
@@ -595,30 +644,29 @@ GARP_MCMC = function(data      = data,
           Mu_edge_old              = Mu_edge[kedge,]
           Sigma_edge_old           = Sigma_edge[,,kedge]
           
-          log_rho_acc       = log_rho_acc + n_kedge/2*
-            ( t((mean_y_kedge-Mu_edge_old)%*%solve(Sigma_edge_old)%*%
-                  (mean_y_kedge-Mu_edge_old)) -
-                t((mean_y_kedge-Mu_kedge_prop)%*%solve(Sigma_kedge_prop)%*%
-                    (mean_y_kedge-Mu_kedge_prop))+
-                log(det(Sigma_edge_old))-log(det(Sigma_kedge_prop)) )
+          log_rho_acc              = log_rho_acc + n_kedge/2*( 
+            t((mean_y_kedge-Mu_edge_old)%*%solve(Sigma_edge_old)%*%
+                (mean_y_kedge-Mu_edge_old)) - t((mean_y_kedge-Mu_kedge_prop)%*%
+                                                  solve(Sigma_kedge_prop)%*%
+                    (mean_y_kedge-Mu_kedge_prop))+log(det(Sigma_edge_old))-
+              log(det(Sigma_kedge_prop)) )
         }
-        
-        move              = (log(runif(1)) < log_rho_acc)
+        move                 = (log(runif(1)) < log_rho_acc)
         
         if(move){
-          Sigma_stable[,,ks]  = Sigma_ks_prop
-          Mu_stable[ks,]      = Mu_ks_prop
+          Sigma_stable[,,ks] = Sigma_ks_prop
+          Mu_stable[ks,]     = Mu_ks_prop
           
-          Mu_edge             = Mu_edge_prop
-          Sigma_edge          = Sigma_edge_prop
+          Mu_edge            = Mu_edge_prop
+          Sigma_edge         = Sigma_edge_prop
         }
       } else {
-        Sigma_stable[,,ks]  = Sigma_ks_prop
-        Mu_stable[ks,]      = Mu_ks_prop
+        Sigma_stable[,,ks]   = Sigma_ks_prop
+        Mu_stable[ks,]       = Mu_ks_prop
       }
     }
     
-    # Sample stable random proportion p_s
+    # Compute stable frequency
     N_S = length(cl_memb_stable)
     N_T = N-N_S
     
@@ -639,9 +687,8 @@ GARP_MCMC = function(data      = data,
     stable_out[r,]                  = stable
     
     if(r%%verbose_step == 0){
-      
-      print(r) # print iteration
-      
+      # print iteration
+      print(r) 
       if(Plot==T){
         col_clus = cl_memb_all
         K_ma = max(K_S,K_T)
@@ -650,22 +697,144 @@ GARP_MCMC = function(data      = data,
         } else if(K_T==1){
           col_clus = ifelse(col_clus<0,1,viridis(K_ma)[abs(col_clus)])
         } else if (K_T>1){
-          col_clus = ifelse(col_clus<0,1,
-                            viridis(K_ma)[abs(col_clus)])
+          col_clus = ifelse(col_clus<0,1, viridis(K_ma)[abs(col_clus)])
         }
         plot(y, col=col_clus, pch=16)
       }
     }
   }
-  # Output
-  return(list(n_clus_out         = n_clus_out,
-              Mu_stable_out     = Mu_stable_out,
-              Sigma_stable_out   = Sigma_stable_out,
-              Mu_edge_out        = Mu_edge_out,
-              Sigma_edge_out     = Sigma_edge_out,
-              cl_memb_stable_out = cl_memb_stable_out,
-              cl_memb_all_out    = cl_memb_all_out,
-              stable_out         = stable_out
-  ))
+    # Output
+    if(!acc_p){
+      Acceptance_out=NA
+    }
+    return(list(n_clus_out         = n_clus_out,
+                Mu_stable_out     = Mu_stable_out,
+                Sigma_stable_out   = Sigma_stable_out,
+                Mu_edge_out        = Mu_edge_out,
+                Sigma_edge_out     = Sigma_edge_out,
+                cl_memb_stable_out = cl_memb_stable_out,
+                cl_memb_all_out    = cl_memb_all_out,
+                stable_out         = stable_out,
+                Acceptance_out     = Acceptance_out
+    ))
+}
+
+## Function to plot the heatmap of the posterior probabilities of co-clustering
+## of obs assigned to vertices
+Plot_heat_vertex = function(dissimlar_stable = dissimlar_stable,
+                            N_S_map          = N_S_map){
+  dismat      = round(dissimlar_stable,2)
+  dismat      = reorder_dismat(dismat,groups=rep(1,N_S_map))
+  plot_dismat = melt(dismat)
+  ggplot(data=plot_dismat, aes(x=factor(X1), y=factor(X2), fill=value))+ 
+    geom_tile()+ theme_bw()+ 
+    scale_y_discrete(breaks = floor(seq(1,N_S_map,length.out = 9)), 
+                     labels = floor(seq(1,N_S_map,length.out = 9))) +
+    scale_x_discrete(breaks = floor(seq(1,N_S_map,length.out = 9)), 
+                     labels = floor(seq(1,N_S_map,length.out = 9))) +
+    xlab("observation")+ylab("observation")+
+    scale_fill_gradientn(colours = c("white", "yellow", "red"), 
+                         values = rescale(c(0,0.25,1)), space = "Lab", name="")+
+    theme(legend.position = "right", text = element_text(size=20))
+}
+
+ 
+## Function to sample edge assignment
+GARP_Edge = function(y                   = y,
+                     is_i_stable         = is_i_stable, 
+                     c_clust_data_stable = c_clust_data_stable,
+                     kappa0              = kappa0,
+                     nu0                 = nu0,
+                     Lambda0             = Lambda0,
+                     Niter               = Niter,
+                     Plot                = TRUE){
+  
+  verbose_step = max(round(Niter/20),1)
+  # Quantities where we save the output
+  cl_memb_edge_out = matrix(nrow=Niter, ncol=N_T_map)
+  n_obs_edge_out   = double(Niter)
+  
+  y_edge           = y[!is_i_stable,]
+  y_stable         = y[is_i_stable,]
+  
+  mu_stable_map    = matrix(nrow=c_clust_data_stable, ncol=2)
+  
+  for (k in 1:c_clust_data_stable){
+    i_k               = which(clust_VI_stable==k)
+    mu_stable_map[k,] = colMeans(y_stable[i_k,])
   }
+  
+  K_T_max    = c_clust_data_stable*(c_clust_data_stable-1)/2
+  Map_k_edge = matrix(nrow=K_T_max,ncol=2)
+  Sigma_edge = array(0,dim=c(P,P,K_T_max))
+  Mu_edge    = matrix(0,nrow=K_T_max, ncol=P)
+  
+  kt = 1
+  for (k_s1 in 2:c_clust_data_stable){
+    for (k_s2 in 1:(k_s1-1)){
+      Map_k_edge[kt,]  = c(k_s1,k_s2)
+      unr              = mu_stable_map[c(k_s1,k_s2),]
+      par_out          = Edge_Parameters(unrot_means=unr)
+      Mu_edge[kt,]     = par_out$mean_edge
+      Sigma_edge[,,kt] = par_out$var_edge
+      kt               = kt+1
+    }
+  }
+  
+  # Cluster memberships initialization
+  cl_memb_edge = sample.int(n=K_T_max, size=N_T_map, replace = T)
+  
+  if(Plot){
+    plot(y_edge, col=cl_memb_edge, xlim=c(min(y[,1]),max(y[,1])),
+         ylim=c(min(y[,2]),max(y[,2])), pch=16, xlab="dim 1", 
+         ylab="dim 2", main="Equal Scale")
+  }
+  
+  K_max_T     = max(cl_memb_edge)
+  n_all       = integer(K_T_max)
+  
+  # Sampler
+  for (r in 1:Niter){
+    # Sample cluster membership
+    n_all[1:K_max_T]     = tabulate(cl_memb_edge)
+    n_minus_i            = n_all
+    for (i in 1:N_T_map){
+      y_edge_i                      = y_edge[i,]
+      cl_memb_edge_i_old            = cl_memb_edge[i]
+      n_i                           = n_all[cl_memb_edge_i_old]  
+      n_minus_i[cl_memb_edge_i_old] = n_i - 1
+      
+      # we use dmNorm. It can be faster to write our function to avoid 
+      # repeating matrix operation on Sigma_mat every time
+      dNorm_Edge     = mniw::dmNorm(y_edge_i, mu=Mu_edge, 
+                                    Sigma=Sigma_edge)
+      b_minus_i      = urn_Dir_all_norm_div(freq_minus=n_minus_i, 
+                                            beta_DM =alpha_Dir, KM=K_T_max) *
+        dNorm_Edge
+      
+      cl_memb_edge_i = sample.int(n=K_T_max,size=1, prob=b_minus_i, useHash=F) 
+      
+      if(cl_memb_edge_i_old!=cl_memb_edge_i){
+        cl_memb_edge[i]       = cl_memb_edge_i
+        n_all                 = n_minus_i
+        n_all[cl_memb_edge_i] = n_all[cl_memb_edge_i]+1
+      }
+    }
+    cl_memb_edge_uni      = unique(cl_memb_edge)
+    K_T                   = length(cl_memb_edge_uni)
+    K_max_T               = max(cl_memb_edge_uni)
+    
+    # Save output
+    # If you want n_clust
+    n_obs_edge_out[r]           = K_T
+    cl_memb_edge_out[r,]        = cl_memb_edge
+    
+    if(r%%verbose_step == 0){
+      print(r) # print iteration
+    }
+  }
+  return(list(n_obs_edge_out   = n_obs_edge_out,
+              cl_memb_edge_out = cl_memb_edge_out,
+              mu_stable_map    = mu_stable_map,
+              Map_k_edge       = Map_k_edge))
 }
