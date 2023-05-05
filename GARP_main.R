@@ -22,7 +22,7 @@ library(LaplacesDemon) # version 16.1.6
 source("GARP_fcts.R")
 
 # Load data
-y = get(load("Data.RData"))
+y = get(load("../Data-and-Results/Data.RData"))
 P = ncol(y)
 N = nrow(y)
 
@@ -33,12 +33,12 @@ Plot_1
 # invisible(dev.off())
 
 # Gaussian edge contour plot (Figure S.1 in the supplementary materials)
-Plot_S1 = edge_countorplot(vertices = rbind(c(-2,-2), c(3,3)),
-                           data.grid =expand.grid(X = seq(-3, 4, length.out=800), 
-                                                  Y = seq(-3, 4, length.out=800)))
+Plot_S1 = edge_countorplot(vertices  = rbind(c(-2,-2), c(3,3)),
+                           data.grid = expand.grid(X=seq(-3,4,length.out=800), 
+                                                   Y=seq(-3,4,length.out=800)))
 Plot_S1
 
-# Run the MCMC ------------------------------------------------------------
+# Run the MCMC -----------------------------------------------------------------
 # GARP hyperparameters
 # Random partition parameters
 p_s       = 0.5 # change to p_v
@@ -69,9 +69,9 @@ if(run_MCMC){
                      acc_p   = TRUE)
   # pt2 = proc.time()
   # pt2-pt1
-  # save(output, file="output.RData")
+  # save(output, file="../Data-and-Results/output.RData")
 } else {
-  load("output.RData")
+  load("../Data-and-Results/output.RData")
 }
 attach(output)
 
@@ -129,57 +129,26 @@ if(run_MCMC){
                           Niter               = Niter,
                           Plot                = TRUE)
   
-  # save(output_edge, file="output_edge.RData")
+  # save(output_edge, file="../Data-and-Results/output_edge.RData")
 } else {
   load("output_edge.RData")
 }
 attach(output_edge)
 
 
-K_T_max             = c_clust_data_stable*(c_clust_data_stable-1)/2
-data_plot           = data.frame(y[is_i_stable,])
-data_plot_edge      = data.frame(y[!is_i_stable,])
+Plot_2a = Plot_result_GARP(y                   = y,
+                           is_i_stable         = is_i_stable, 
+                           clust_VI_stable     = clust_VI_stable,
+                           mu_stable_map       = mu_stable_map,
+                           Map_k_edge          = Map_k_edge,
+                           cl_memb_edge_out    = cl_memb_edge_out
+)
 
-Segment_data           = matrix(nrow=K_T_max,ncol=4)
-colnames(Segment_data) = c("x","y","xend","yend")
-
-for(ind in 1:K_T_max){
-  Segment_data[ind,] = c(mu_stable_map[Map_k_edge[ind,1],1], mu_stable_map[Map_k_edge[ind,1],2],
-                         mu_stable_map[Map_k_edge[ind,2],1], mu_stable_map[Map_k_edge[ind,2],2])
-}
-
-Seg1 = data.frame(t(Segment_data[1,]))
-Seg2 = data.frame(t(Segment_data[2,]))
-Seg3 = data.frame(t(Segment_data[3,]))
-Seg4 = data.frame(t(Segment_data[4,]))
-Seg5 = data.frame(t(Segment_data[5,]))
-Seg6 = data.frame(t(Segment_data[6,]))
-
-Alpha = table(cl_memb_edge_out[seq_thin,])
-Alpha = Alpha/max(Alpha)*100
-
-
-Main_phases = factor(clust_VI_stable)
-Edge        = factor(apply(cl_memb_edge_out[seq_thin,],2,Mode))
-
-all_phases               = c(Main_phases, Edge)
-colnames(data_plot_edge) = c("MDS1", "MDS2")
-data_plot_all            = rbind(data_plot,data_plot_edge)
-levels(all_phases)       = c("1", "2", "3", "4", "(1,2)", "(2,3)", "(3,4)")
-data_plot_all$phases     = all_phases
-data_plot_all$Vi         = factor(c(rep(1,length(Main_phases)), rep(0,length(Edge))))
-
-Plot = ggplot() +
-  geom_point(data=data_plot_all,aes(x=MDS1, y=MDS2,col=all_phases, shape = Vi))+
-  geom_segment(data=Seg1, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[1],size=1)+
-  geom_segment(data=Seg2, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[2],size=1)+
-  geom_segment(data=Seg3, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[3],size=1)+
-  geom_segment(data=Seg4, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[4],size=1)+
-  geom_segment(data=Seg5, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[5],size=1)+
-  geom_segment(data=Seg6, mapping =aes(x = x, y = y, xend = xend, yend = yend),col="black",alpha=Alpha[6],size=1)+
-  xlab("Dim 1")+ylab("Dim 2")+labs(color="Z_i", shape="V_i")+
-  theme_bw()+theme(legend.position = "right", text = element_text(size=20))
-
-# CairoPNG(filename = '../Image/Inference_Scatter_Mice.png', width = 500, height = 400)
-Plot
+# CairoPNG(filename = '../Image/Inference_Scatter_Mice.png', 
+# width = 500, height = 400)
+Plot_2a
 # invisible(dev.off())
+
+# Find markers  ----------------------------------------------------------------
+# load data before dimensionality reduction
+load("../Data-and-Results/Mice_original_data.rda")
