@@ -1,7 +1,7 @@
 # GARP functions
 
 ## Function for preliminary scatter plot
-pre_plot = function(data){
+pre_plot <- function(data){
   data_plot = data.frame(y)
   colnames(data_plot) = c("MDS1","MDS2")
   Plot = ggplot(data_plot, aes(x=MDS1,y=MDS2))+geom_point()
@@ -22,9 +22,16 @@ urn_Dir_all_norm_div <- function(freq_minus,beta_DM,KM){
   return(unorm_out/sum(unorm_out))
 }
 
+## Function to compute distribution of the number of vertex 
+## from the clustering indicator samples
+Freq_Kv <- function(cl_samp=cl_memb_stable_out[seq_thin,]){
+  prop.table(table(apply(cl_memb_stable_out[seq_thin,], FUN=function(x){
+  max(base::unique(na.omit(x)))}, MARGIN=1)))
+}
+
 # Reorder rows and columns (observations) of a dissimilarity matrix intra groups 
 # and possibly reorder also the groups (batch of observations)
-reorder_dismat = function(dismat, groups, order.groups=NULL){
+reorder_dismat <-  function(dismat, groups, order.groups=NULL){
   # Use correlation between variables as distance
   order.dis   = integer(0)
   J           = length(unique(groups))
@@ -45,7 +52,7 @@ reorder_dismat = function(dismat, groups, order.groups=NULL){
 
 ## Function to compute the edge parameters given the location parameter 
 ## of the two vertices
-Edge_Parameters = function(unrot_means=unr, var=1, qChi_2=qchisq(0.99,2)){
+Edge_Parameters <- function(unrot_means=unr, var=1, qChi_2=qchisq(0.99,2)){
   diff_mu     = unrot_means[1,]-unrot_means[2,]
   if (all(diff_mu==0)){
     rot_var     = 1/qChi_2*diag(c(1, 1))
@@ -87,7 +94,7 @@ Edge_Parameters = function(unrot_means=unr, var=1, qChi_2=qchisq(0.99,2)){
 }
 
 # Function to plot Gaussian edge contour plot
-edge_countorplot = function(vertices = rbind(c(-2,-2), c(3,3)),
+edge_countorplot <- function(vertices = rbind(c(-2,-2), c(3,3)),
                     data.grid =expand.grid(X = seq(-3, 4, length.out=800), 
                                            Y = seq(-3, 4, length.out=800))){
   par    <- Edge_Parameters(unrot_means=vertices, qChi_2=qchisq(0.99,2))
@@ -105,15 +112,15 @@ edge_countorplot = function(vertices = rbind(c(-2,-2), c(3,3)),
 }
 
 ## Function to implement MCMC
-GARP_MCMC = function(data      = data,
-                     mu0       = mu0, 
-                     kappa0    = kappa0,
-                     nu0       = nu0,
-                     Lambda0   = Lambda0,
-                     p_s       = p_s,
-                     Niter     = Niter,
-                     Plot      = TRUE,
-                     acc_p     = FALSE){
+GARP_MCMC <- function(data      = data,
+                      mu0       = mu0, 
+                      kappa0    = kappa0,
+                      nu0       = nu0,
+                      Lambda0   = Lambda0,
+                      p_s       = p_s,
+                      Niter     = Niter,
+                      Plot      = TRUE,
+                      acc_p     = FALSE){
   verbose_step = max(round(Niter/20),1)
     
   # Quantities where we save MCMC output
@@ -226,10 +233,10 @@ GARP_MCMC = function(data      = data,
     ind_empty          = F
     
     # sample cell belonging to transition phases before for efficiency
-    obs_edge_old     = which(stable==0)
-    obs_stable_old   = which(stable==1)
-    sorted_obs = c(obs_edge_old,obs_stable_old)
-    n_edge_all = integer(K_T_max_plus)
+    obs_edge_old   = which(stable==0)
+    obs_stable_old = which(stable==1)
+    sorted_obs     = c(obs_edge_old,obs_stable_old)
+    n_edge_all     = integer(K_T_max_plus)
     
     # If there exist occupied transition phase
     if(N_T>0){
@@ -451,7 +458,7 @@ GARP_MCMC = function(data      = data,
         
         b_minus_i_all     = c(b_minus_i_stable,b_minus_i_edge)
         
-        cl_memb_i         = sample.int(n=K_T_max_plus+K_S_plus+1,size=1, 
+        cl_memb_i         = sample.int(n=K_T_max_plus+K_S_plus+1, size=1, 
                                        prob=b_minus_i_all, useHash = F)
         stable_i          = ifelse(cl_memb_i<(K_S_plus+2),1,0)
         
@@ -721,12 +728,12 @@ GARP_MCMC = function(data      = data,
 
 ## Function to plot the heatmap of the posterior probabilities of co-clustering
 ## of obs assigned to vertices
-Plot_heat_vertex = function(dissimlar_stable = dissimlar_stable,
-                            N_S_map          = N_S_map){
+Plot_heat_vertex <- function(dissimlar_stable = dissimlar_stable,
+                             N_S_map          = N_S_map){
   dismat      = round(dissimlar_stable,2)
   dismat      = reorder_dismat(dismat,groups=rep(1,N_S_map))
-  plot_dismat = melt(dismat)
-  ggplot(data=plot_dismat, aes(x=factor(X1), y=factor(X2), fill=value))+ 
+  plot_dismat = reshape2::melt(dismat)
+  ggplot(data=plot_dismat, aes(x=factor(Var1), y=factor(Var2), fill=value))+ 
     geom_tile()+ theme_bw()+ 
     scale_y_discrete(breaks = floor(seq(1,N_S_map,length.out = 9)), 
                      labels = floor(seq(1,N_S_map,length.out = 9))) +
@@ -746,14 +753,14 @@ Mode <- function(x) {
 
  
 ## Function to sample edge assignment
-GARP_Edge = function(y                   = y,
-                     is_i_stable         = is_i_stable, 
-                     c_clust_data_stable = c_clust_data_stable,
-                     kappa0              = kappa0,
-                     nu0                 = nu0,
-                     Lambda0             = Lambda0,
-                     Niter               = Niter,
-                     Plot                = TRUE){
+GARP_Edge <- function(y                   = y,
+                      is_i_stable         = is_i_stable, 
+                      c_clust_data_stable = c_clust_data_stable,
+                      kappa0              = kappa0,
+                      nu0                 = nu0,
+                      Lambda0             = Lambda0,
+                      Niter               = Niter,
+                      Plot                = TRUE){
   
   verbose_step = max(round(Niter/20),1)
   # Quantities where we save the output
@@ -818,7 +825,7 @@ GARP_Edge = function(y                   = y,
                                             beta_DM =alpha_Dir, KM=K_T_max) *
         dNorm_Edge
       
-      cl_memb_edge_i = sample.int(n=K_T_max,size=1, prob=b_minus_i, useHash=F) 
+      cl_memb_edge_i = sample.int(n=K_T_max, size=1, prob=b_minus_i, useHash=F) 
       
       if(cl_memb_edge_i_old!=cl_memb_edge_i){
         cl_memb_edge[i]       = cl_memb_edge_i
@@ -847,7 +854,7 @@ GARP_Edge = function(y                   = y,
 
 # Function to plot scatter plot and results of GARP
 # To be generalized for different number of edges and vertices
-Plot_result_GARP = function(y                   = y,
+Plot_result_GARP <- function(y                   = y,
                             is_i_stable         = is_i_stable, 
                             clust_VI_stable     = clust_VI_stable,
                             mu_stable_map       = mu_stable_map,
@@ -904,17 +911,78 @@ Plot_result_GARP = function(y                   = y,
   Plot = ggplot() +
     geom_point(data=data_plot_all,aes(x=MDS1, y=MDS2,col=all_phases, shape=Vi))+
     geom_segment(data=Seg1, mapping =aes(x= x, y = y, xend=xend, yend=yend),
-                 col="black",alpha=Alpha[1],size=1)+
+                 col="black", alpha=Alpha[1])+
     geom_segment(data=Seg2, mapping=aes(x=x, y=y, xend=xend,yend=yend),
-                 col="black",alpha=Alpha[2], size=1)+
+                 col="black", alpha=Alpha[2])+
     geom_segment(data=Seg3, mapping=aes(x=x, y=y, xend=xend, yend=yend),
-                 col="black",alpha=Alpha[3], size=1)+
+                 col="black", alpha=Alpha[3])+
     geom_segment(data=Seg4, mapping=aes(x=x, y=y, xend=xend, yend=yend),
-                 col="black",alpha=Alpha[4], size=1)+
+                 col="black", alpha=Alpha[4])+
     geom_segment(data=Seg5, mapping=aes(x=x, y=y, xend=xend, yend=yend),
-                 col="black", alpha=Alpha[5], size=1)+
+                 col="black", alpha=Alpha[5])+
     geom_segment(data=Seg6, mapping=aes(x=x, y=y, xend=xend, yend=yend),
-                 col="black", alpha=Alpha[6], size=1)+
+                 col="black", alpha=Alpha[6])+
     xlab("Dim 1")+ylab("Dim 2")+labs(color="Z_i", shape="V_i")+
     theme_bw()+theme(legend.position = "right", text = element_text(size=20))
 }
+
+
+# Function to plot Heat-map log genetic expressions 
+# in top 6 DE genes in all cells.
+Plot_heat_DE <- function(markers_cell    = markers_cell,
+                   clust_VI_stable = clust_VI_stable){
+  ord_core_stable_mat = markers_cell[order(clust_VI_stable),]
+  
+  Plot_Data = log(ord_core_stable_mat[,-ncol(ord_core_stable_mat)])
+  Plot_Data = ifelse(Plot_Data==-Inf,NA,Plot_Data)
+  Vertex= sort(clust_VI_stable)
+  
+  hlines = cumsum(table(sort(clust_VI_stable)))
+  
+  melted_cormat <- reshape2::melt(t(Plot_Data))
+  ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value))+
+    geom_tile(aes(fill = value)) +theme (panel.grid.major = element_blank(),
+                                         panel.border = element_blank(),
+                                         panel.background = element_blank(), 
+                                         axis.text.y=element_blank())+
+    ylab("cells")+xlab("DE genes")+
+    scale_fill_gradientn(colours = c("red","black", "green"), na.value="white")+
+    geom_hline(yintercept=hlines[-length(hlines)],linetype = 2,col="blue")
+}
+
+## Function to plot the Heatmap of the log mean expressions 
+# in top 6 DE genes in the main phases.
+Plot_heat_DE_main <- function(Plot_Mark = Plot_Mark){
+  # base::rownames(Plot_Mark) = 1:4
+  melted_cormat <- reshape2::melt(t(log(Plot_Mark[,-1])))
+  ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value))+
+    geom_tile(aes(fill = value)) +theme (panel.grid.major = element_blank(),
+                                         panel.border = element_blank(),
+                                         panel.background = element_blank())+
+    ylab("Vertices")+xlab("DE genes")+
+    scale_fill_gradientn(colours = c("red","black", "green"), na.value="white")
+}
+
+## Boxplot genetic expressions (after log(· + 1) transformation) 
+## in the top 6 DE genes in all cells in the different main phases.
+Boxplot_DE <- function(markers_cell = markers_cell){
+  ord_core_stable_mat = markers_cell[order(clust_VI_stable),]
+  BoxPlot_Data = rbind(cbind(ord_core_stable_mat[,c(1,7)], markers[1]),
+                       cbind(ord_core_stable_mat[,c(2,7)], markers[2]),
+                       cbind(ord_core_stable_mat[,c(3,7)], markers[3]),
+                       cbind(ord_core_stable_mat[,c(4,7)], markers[4]),
+                       cbind(ord_core_stable_mat[,c(5,7)], markers[5]),
+                       cbind(ord_core_stable_mat[,c(6,7)], markers[6]))
+  
+  colnames(BoxPlot_Data) = c("value", "vertex", "gene")
+  BoxPlot_Data           = data.frame(BoxPlot_Data)
+  BoxPlot_Data$value     = log(as.double(BoxPlot_Data$value)+1)
+  BoxPlot_Data$vertex    = factor(BoxPlot_Data$vertex)
+  
+  ggplot(BoxPlot_Data, aes(y=value, x=gene, col=vertex)) + geom_boxplot() + 
+    theme_bw() + theme(axis.title=element_blank(), 
+                       axis.text =element_text(size=20, angle = 45, vjust = 0.5, 
+                                  hjust=1) , strip.text = element_text(size=30))
+}
+
+
