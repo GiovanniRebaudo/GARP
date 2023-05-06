@@ -165,54 +165,6 @@ if(Save_Plot){invisible(dev.off())}
 # (Table 4 - GARP - in the main manuscript)
 Table_4_GARP = Freq_Kv(cl_samp=cl_memb_stable_out[seq_thin,])
 # xtable(t(Table_4_GARP),digits = 4)
-  
-
-# Run the MCMC of RPM with independent atoms (non graph-aligned) ---------------
-if(run_MCMC){
-  # Set the seed for reproducibility
-  set.seed(123)
-  output_ind = GARP_MCMC(data    = data,
-                         mu0     = mu0, 
-                         kappa0  = kappa0,
-                         nu0     = nu0,
-                         Lambda0 = Lambda0,
-                         p_s     = 1,
-                         Niter   = Niter,
-                         Plot    = TRUE,
-                         acc_p   = FALSE)
-  # save(output_ind, file="./Data-and-Results/output_ind.RData")
-} else {
-  load("./Data-and-Results/output_ind.RData")
-}
-attach(output_ind)
-# Assign cells to vertex/edge phases
-p_s_i        = colMeans(stable_out[seq_thin,])
-is_i_stable  = (p_s_i>0.5)
-(N_S_map     = sum(is_i_stable))
-(N_T_map     = N-N_S_map)
-
-# Point estimate vertex-clustering
-clust_VI_stable       = salso(cl_memb_all_out[seq_thin,is_i_stable], loss=VI())
-uni_clust_data_stable = unique(clust_VI_stable)
-
-# Number of vertex clusters 
-c_clust_data_stable       = length(uni_clust_data_stable)
-
-# Frequencies of vertex clusters
-freq_clust_VI_stable      = double(c_clust_data_stable)
-for (i in 1:c_clust_data_stable){
-  uni_clust_stable        = uni_clust_data_stable[i]
-  freq_clust_VI_stable[i] = sum(clust_VI_stable==uni_clust_stable)
-}
-freq_clust_VI_stable
-
-# Compute probability of co-clustering of cells assigned to vertices
-dissimlar_stable = psm(cl_memb_all_out[seq_thin,is_i_stable])
-
-# Posterior probabilities of co-clustering of obs assigned to vertices.
-# (Figure 2b in the main manuscript)
-Plot_2b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
-                           N_S_map          = N_S_map)
 
 # Find markers  ----------------------------------------------------------------
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -241,7 +193,6 @@ cluster.markers = scran::findMarkers(x=core_stable_mat, pval.type = "any",
 
 markers      = rownames(cluster.markers[[1]][1:N_DE,])
 markers_cell = cbind(t(core_stable_mat[markers,]), clust_VI_stable)
-
 
 Plot_Mark = markers_cell %>% data.frame %>%
   group_by(clust_VI_stable) %>%
@@ -282,3 +233,69 @@ Plot_4R = Boxplot_DE(markers_cell = markers_cell)
 if(Save_Plot){ggsave(filename='./Image/Boxplot_DE.png', plot=Plot_4R, 
                      device="png", width = 15, height = 17, units="cm")}
 
+# Run the MCMC of RPM with independent atoms (non graph-aligned) ---------------
+if(run_MCMC){
+  # Set the seed for reproducibility
+  set.seed(123)
+  output_ind = GARP_MCMC(data    = data,
+                         mu0     = mu0, 
+                         kappa0  = kappa0,
+                         nu0     = nu0,
+                         Lambda0 = Lambda0,
+                         p_s     = 1,
+                         Niter   = Niter,
+                         Plot    = TRUE,
+                         acc_p   = FALSE)
+  # save(output_ind, file="./Data-and-Results/output_ind.RData")
+} else {
+  load("./Data-and-Results/output_ind.RData")
+}
+attach(output_ind)
+
+# Point estimate vertex-clustering
+clust_VI_stable       = salso(cl_memb_all_out[seq_thin,], loss=VI())
+uni_clust_data_stable = unique(clust_VI_stable)
+
+# Number of vertex clusters 
+c_clust_data_stable       = length(uni_clust_data_stable)
+
+# Frequencies of vertex clusters
+freq_clust_VI_stable      = double(c_clust_data_stable)
+for (i in 1:c_clust_data_stable){
+  uni_clust_stable        = uni_clust_data_stable[i]
+  freq_clust_VI_stable[i] = sum(clust_VI_stable==uni_clust_stable)
+}
+freq_clust_VI_stable
+
+# Compute probability of co-clustering of cells assigned to vertices
+dissimlar_stable = psm(cl_memb_all_out[seq_thin,])
+
+# RPM with independent atoms. 
+# Posterior probabilities of co-clustering of obs assigned to vertices.
+# (Figure 5b in the main manuscript)
+Plot_5b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
+                           N_S_map          = N)
+
+if(Save_Plot){CairoPNG(filename = './Image/Prob_Coclus_obs_Mice_Data_Orange.png', 
+                       width = 500, height = 400)}
+Plot_5b
+if(Save_Plot){invisible(dev.off())}
+
+# RPM with independent atoms. 
+# Scatter-plot of the data and clustering point estimate.
+# (Figure 5a in the main manuscript)
+
+Plot_5a = Plot_result_GARP(y                   = y,
+                           is_i_stable         = rep(1,nrow(y)), 
+                           clust_VI_stable     = clust_VI_stable
+)
+
+if(Save_Plot){CairoPNG(filename = '../Image/Inference_Scatter_Mice_Orange.png',
+                       width = 500, height = 400)}
+Plot_5a
+if(Save_Plot){invisible(dev.off())}
+
+# Posterior distribution of the number of vertex: K_v
+# (Table 4 - independent atoms RPM - in the main manuscript)
+Table_4_b = Freq_Kv(cl_samp=cl_memb_stable_out[seq_thin,])
+# xtable(t(Table_4_b),digits = 4)
