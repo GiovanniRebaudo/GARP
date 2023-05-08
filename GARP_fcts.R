@@ -952,13 +952,14 @@ Plot_heat_DE <- function(markers_cell    = markers_cell,
   
   melted_cormat <- reshape2::melt(t(Plot_Data))
   ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value))+
-    geom_tile(aes(fill = value)) +theme (panel.grid.major = element_blank(),
-                                         panel.border = element_blank(),
-                                         panel.background = element_blank(), 
-                                         axis.text.y=element_blank())+
-    ylab("cells")+xlab("DE genes")+
+    geom_tile(aes(fill = value)) +
+    theme(panel.grid.major = element_blank(), panel.border = element_blank(),
+          panel.background = element_blank(), axis.text.y=element_blank(),
+          text=element_text(size=20),
+          axis.text.x=element_text(angle = 45, vjust = 0.5, hjust=1))+
+    ylab("cells")+xlab("")+#xlab("DE genes")+
     scale_fill_gradientn(colours = c("red","black", "green"), na.value="white")+
-    geom_hline(yintercept=hlines[-length(hlines)],linetype = 2,col="blue")
+    geom_hline(yintercept=hlines[-length(hlines)], linetype = 2, col="blue")
 }
 
 ## Function to plot the Heatmap of the log mean expressions 
@@ -969,7 +970,8 @@ Plot_heat_DE_main <- function(Plot_Mark = Plot_Mark){
   ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value))+
     geom_tile(aes(fill = value)) +theme (panel.grid.major = element_blank(),
                                          panel.border = element_blank(),
-                                         panel.background = element_blank())+
+                                         panel.background = element_blank(),
+                                         strip.text = element_text(size=30))+
     ylab("Vertices")+xlab("DE genes")+
     scale_fill_gradientn(colours = c("red","black", "green"), na.value="white")
 }
@@ -993,7 +995,7 @@ Boxplot_DE <- function(markers_cell = markers_cell){
   ggplot(BoxPlot_Data, aes(y=value, x=gene, col=vertex)) + geom_boxplot() + 
     theme_bw() + theme(axis.title=element_blank(), 
                        axis.text =element_text(size=20, angle = 45, vjust = 0.5, 
-                                  hjust=1) , strip.text = element_text(size=30))
+                                  hjust=1), strip.text = element_text(size=30))
 }
 
 

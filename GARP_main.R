@@ -224,7 +224,7 @@ Plot_4L = Plot_heat_DE(markers_cell    = markers_cell,
                        clust_VI_stable = clust_VI_stable)
 Plot_4L
 if(Save_Plot){ggsave(filename='./Image/Heatmap_all_cells_DE.png', plot=Plot_4L, 
-       device="png",width = 15, height = 17, units="cm")}
+       device="png", width = 15, height = 17, units="cm")}
 
 # Boxplot genetic expressions (after log(· + 1) transformation) 
 # in the top 6 DE genes in all cells in the different main phases
@@ -286,11 +286,11 @@ if(Save_Plot){invisible(dev.off())}
 # (Figure 5a in the main manuscript)
 
 Plot_5a = Plot_result_GARP(y                   = y,
-                           is_i_stable         = rep(1,nrow(y)), 
+                           is_i_stable         = rep(1, nrow(y)), 
                            clust_VI_stable     = clust_VI_stable
 )
 
-if(Save_Plot){CairoPNG(filename = '../Image/Inference_Scatter_Mice_Orange.png',
+if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Mice_Orange.png',
                        width = 500, height = 400)}
 Plot_5a
 if(Save_Plot){invisible(dev.off())}
