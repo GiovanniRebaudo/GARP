@@ -937,6 +937,86 @@ Plot_result_GARP <- function(y                   = y,
   }
 }
 
+# Function to plot scatter plot and results of GARP sim
+Plot_result_GARP_sim <- function(y                   = y,
+                                 is_i_stable         = is_i_stable, 
+                                 clust_VI_stable     = clust_VI_stable,
+                                 mu_stable_map       = mu_stable_map,
+                                 Map_k_edge          = Map_k_edge,
+                                 cl_memb_edge_out    = cl_memb_edge_out){
+  c_clust_data_stable    = length(unique(clust_VI_stable))
+  
+  K_T_max                = c_clust_data_stable*(c_clust_data_stable-1)/2
+  data_plot              = data.frame(y[is_i_stable,])
+  data_plot_edge         = data.frame(y[!is_i_stable,])
+  
+  Segment_data           = matrix(nrow=K_T_max,ncol=4)
+  colnames(Segment_data) = c("x","y","xend","yend")
+  
+  for(ind in 1:K_T_max){
+    Segment_data[ind,] = c(mu_stable_map[Map_k_edge[ind,1],1], 
+                           mu_stable_map[Map_k_edge[ind,1],2],
+                           mu_stable_map[Map_k_edge[ind,2],1], 
+                           mu_stable_map[Map_k_edge[ind,2],2])
+  }
+  
+  Seg1  = data.frame(t(Segment_data[1,]))
+  Seg2  = data.frame(t(Segment_data[2,]))
+  Seg3  = data.frame(t(Segment_data[3,]))
+  Seg4  = data.frame(t(Segment_data[4,]))
+  Seg5  = data.frame(t(Segment_data[5,]))
+  Seg6  = data.frame(t(Segment_data[6,]))
+  Seg7  = data.frame(t(Segment_data[7,]))
+  Seg8  = data.frame(t(Segment_data[8,]))
+  Seg9  = data.frame(t(Segment_data[9,]))
+  Seg10 = data.frame(t(Segment_data[10,]))
+  
+  Alpha = table(cl_memb_edge_out[seq_thin,])
+  Alpha = Alpha/max(Alpha)*100
+  
+  Main_phases          = factor(clust_VI_stable)
+  Edge                 = factor(apply(cl_memb_edge_out[seq_thin,],2,Mode))
+  
+  temp_names =c()
+  for(ind in as.integer(levels(Edge))){
+    temp_names = c(temp_names, paste0("(",Map_k_edge[ind,2],", ",
+                                      Map_k_edge[ind,1],")"))
+  }
+  levels(Edge) = as.character(temp_names)
+  
+  all_phases               = c(Main_phases, Edge)
+  data_plot_all            = rbind(data_plot, data_plot_edge)
+  colnames(data_plot_all)  = c("MDS1", "MDS2")
+  
+  data_plot_all$phases     = all_phases
+  data_plot_all$Vi         = factor(c(rep(1,length(Main_phases)), 
+                                      rep(0,length(Edge))))
+  Plot = ggplot() +
+    geom_point(data=data_plot_all,aes(x=MDS1, y=MDS2,col=all_phases, shape=Vi))+
+    geom_segment(data=Seg1, mapping =aes(x= x, y = y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[1])+
+    geom_segment(data=Seg2, mapping=aes(x=x, y=y, xend=xend,yend=yend),
+                 col="black", alpha=Alpha[2])+
+    geom_segment(data=Seg3, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[3])+
+    geom_segment(data=Seg4, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[4])+
+    geom_segment(data=Seg5, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[5])+
+    geom_segment(data=Seg6, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[6])+
+    geom_segment(data=Seg7, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[7])+
+    geom_segment(data=Seg8, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[8])+
+    geom_segment(data=Seg9, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[9])+
+    geom_segment(data=Seg10, mapping=aes(x=x, y=y, xend=xend, yend=yend),
+                 col="black", alpha=Alpha[10])+
+    xlab("Dim 1") + ylab("Dim 2")+labs(color="Z_i", shape="V_i")+
+    theme_bw() + theme(legend.position = "right", text = element_text(size=10))
+}
+
 
 # Function to plot Heat-map log genetic expressions 
 # in top 6 DE genes in all cells.
