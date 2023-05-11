@@ -31,7 +31,7 @@ P = ncol(y)
 N = nrow(y)
 
 # If you want to save the plot
-Save_Plot = FALSE #TRUE
+Save_Plot = TRUE
 
 # Data scatter plot (Figure 1 in the main manuscript)
 Plot_1 = pre_plot(y)
