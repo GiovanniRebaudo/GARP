@@ -49,33 +49,27 @@ data_sim_ver_3 = mvrnorm(n_s, ver_3_mean, ver_3_var)
 data_sim_ver_4 = mvrnorm(n_s, ver_4_mean, ver_4_var)
 data_sim_ver_5 = mvrnorm(n_s, ver_5_mean, ver_5_var)
 
-True_par          = Edge_Parameters(unrot_means = 
-                                      rbind(ver_5_mean,ver_4_mean))
+True_par          = Edge_Parameters(unrot_means = rbind(ver_5_mean,ver_4_mean))
 data_sim_edg_1 = mvrnorm(n_e, True_par$mean_edge, True_par$var_edge)
-True_par          = Edge_Parameters(unrot_means = 
-                                      rbind(ver_3_mean,ver_2_mean))
+True_par          = Edge_Parameters(unrot_means = rbind(ver_3_mean,ver_2_mean))
 data_sim_edg_2 = mvrnorm(n_e, True_par$mean_edge, True_par$var_edge)
-True_par          = Edge_Parameters(unrot_means = 
-                                      rbind(ver_1_mean,ver_5_mean))
+True_par          = Edge_Parameters(unrot_means = rbind(ver_1_mean,ver_5_mean))
 data_sim_edg_3 = mvrnorm(n_e, True_par$mean_edge, True_par$var_edge)
-True_par          = Edge_Parameters(unrot_means = 
-                                      rbind(ver_1_mean,ver_3_mean))
+True_par          = Edge_Parameters(unrot_means = rbind(ver_1_mean,ver_3_mean))
 data_sim_edg_4 = mvrnorm(n_e, True_par$mean_edge, True_par$var_edge)
-True_par          = Edge_Parameters(unrot_means = 
-                                      rbind(ver_5_mean,ver_3_mean))
+True_par          = Edge_Parameters(unrot_means = rbind(ver_5_mean,ver_3_mean))
 data_sim_edg_5 = mvrnorm(n_e, True_par$mean_edge, True_par$var_edge)
 
-data_sim = rbind(data_sim_ver_1, data_sim_ver_2, data_sim_ver_3, 
-                 data_sim_ver_4, data_sim_ver_5, data_sim_edg_1,
-                 data_sim_edg_2, data_sim_edg_3, data_sim_edg_4,
-                 data_sim_edg_5)
+data_sim = rbind(data_sim_ver_1, data_sim_ver_2, data_sim_ver_3, data_sim_ver_4,
+                 data_sim_ver_5, data_sim_edg_1, data_sim_edg_2, data_sim_edg_3,
+                 data_sim_edg_4, data_sim_edg_5)
 
 data_sim = data_sim[,c(2,1)]
 
-xlim_sim_data = c(min(data_sim[,1]),max(data_sim[,1]))
-ylim_sim_data = c(min(data_sim[,2]),max(data_sim[,2]))
-xylim_sim     = c(min(xlim_sim_data,ylim_sim_data), 
-                  max(xlim_sim_data,ylim_sim_data))
+xlim_sim_data = c(min(data_sim[,1]), max(data_sim[,1]))
+ylim_sim_data = c(min(data_sim[,2]), max(data_sim[,2]))
+xylim_sim     = c(min(xlim_sim_data, ylim_sim_data), 
+                  max(xlim_sim_data, ylim_sim_data))
 
 Cluster = factor(c(rep("1",n_s), rep("5",n_s), rep("3",n_s), rep("4",n_s), 
                    rep("2",n_s), rep("2,4",n_e), rep("3,5",n_e), rep("1,2",n_e),
@@ -131,7 +125,6 @@ Plot_S2
 if(Save_Plot){invisible(dev.off())}
 
 y = data_sim
-P = ncol(y)
 N = nrow(y)
 
 # If you want to save the plot
@@ -162,7 +155,7 @@ nu0       = 100
 Lambda0   = diag(rep(150,P))
 
 # MCMC quantities
-Niter     = 100
+Niter     = 1e4
 run_MCMC  = T
 if(run_MCMC){
   # Set the seed for reproducibility
@@ -335,16 +328,11 @@ ver_5_var = diag(rep(1,2))/2
 n_s = 200
 n_e = 100
 
-data_sim_ver_1 = mvrnorm(n=n_s, ver_1_mean, 
-                            ver_1_var)
-data_sim_ver_2 = mvrnorm(n=n_s, ver_2_mean, 
-                            ver_2_var)
-data_sim_ver_3 = mvrnorm(n=n_s, ver_3_mean, 
-                            ver_3_var)
-data_sim_ver_4 = mvrnorm(n_s, ver_4_mean, 
-                            ver_4_var)
-data_sim_ver_5 = mvrnorm(n=n_s, ver_5_mean, 
-                            ver_5_var)
+data_sim_ver_1 = mvrnorm(n=n_s, ver_1_mean, ver_1_var)
+data_sim_ver_2 = mvrnorm(n=n_s, ver_2_mean, ver_2_var)
+data_sim_ver_3 = mvrnorm(n=n_s, ver_3_mean, ver_3_var)
+data_sim_ver_4 = mvrnorm(n=n_s, ver_4_mean, ver_4_var)
+data_sim_ver_5 = mvrnorm(n=n_s, ver_5_mean, ver_5_var)
 unif_bound = 1
 unif_bias  = 0.25
 
@@ -359,15 +347,15 @@ data_sim_edg_4 = Edge_miss(unrot_means=rbind(ver_1_mean,ver_3_mean),
 data_sim_edg_5 = Edge_miss(unrot_means = rbind(ver_5_mean,ver_3_mean), 
                                  bias=unif_bias, n=n_e,bound=unif_bound)
 
-data_sim = rbind(data_sim_ver_1,data_sim_ver_2,data_sim_ver_3,
-                 data_sim_ver_4,
-                 data_sim_ver_5, data_sim_edg_1,
-                 data_sim_edg_2,data_sim_edg_3,data_sim_edg_4,
-                 data_sim_edg_5)
+data_sim = rbind(data_sim_ver_1, data_sim_ver_2, data_sim_ver_3, data_sim_ver_4,
+                 data_sim_ver_5, data_sim_edg_1, data_sim_edg_2, data_sim_edg_3,
+                 data_sim_edg_4, data_sim_edg_5)
+
+N        = nrow(data_sim)
 
 xlim_sim_data = c(min(data_sim[,1]),max(data_sim[,1]))
 ylim_sim_data = c(min(data_sim[,2]),max(data_sim[,2]))
-xylim_sim     = c(min(xlim_sim_data,ylim_sim_data),
+xylim_sim     = c(min(xlim_sim_data,ylim_sim_data), 
                   max(xlim_sim_data,ylim_sim_data))
 
 Plot_extra3 = ggplot() +geom_point(data=data_plot_vertex, aes(x=X, y=Y))+
@@ -387,6 +375,7 @@ Plot_extra3 = ggplot() +geom_point(data=data_plot_vertex, aes(x=X, y=Y))+
 Plot_extra3
 
 if(run_MCMC){
+  mu0       = colMeans(data_sim) 
   # Set the seed for reproducibility
   set.seed(123)
   output_sim_2 = GARP_MCMC(data    = data_sim,
@@ -481,70 +470,42 @@ ver_3_mean = c(5,3)
 ver_4_mean = c(-5,-4)
 ver_5_mean = c(-4,2)
 
-ver_1_var = diag(rep(1,2))/2
-ver_2_var = diag(rep(1,2))/2
-ver_3_var = diag(rep(1,2))/2
-ver_4_var = diag(rep(1,2))/2
-ver_5_var = diag(rep(1,2))/2
+ver_1_var = diag(rep(1,2))/4
+ver_2_var = diag(rep(1,2))/4
+ver_3_var = diag(rep(1,2))/4
+ver_4_var = diag(rep(1,2))/4
+ver_5_var = diag(rep(1,2))/4
 
 n_s = 200
-n_e = 100
 
-data_sim_ver_1 = mvrnorm(n=n_s, ver_1_mean, 
-                         ver_1_var)
-data_sim_ver_2 = mvrnorm(n=n_s, ver_2_mean, 
-                         ver_2_var)
-data_sim_ver_3 = mvrnorm(n=n_s, ver_3_mean, 
-                         ver_3_var)
-data_sim_ver_4 = mvrnorm(n_s, ver_4_mean, 
-                         ver_4_var)
-data_sim_ver_5 = mvrnorm(n=n_s, ver_5_mean, 
-                         ver_5_var)
-unif_bound = 1
-unif_bias  = 0.25
+data_sim_ver_1 = mvrnorm(n=n_s, ver_1_mean, ver_1_var)
+data_sim_ver_2 = mvrnorm(n=n_s, ver_2_mean, ver_2_var)
+data_sim_ver_3 = mvrnorm(n=n_s, ver_3_mean, ver_3_var)
+data_sim_ver_4 = mvrnorm(n_s, ver_4_mean, ver_4_var)
+data_sim_ver_5 = mvrnorm(n=n_s, ver_5_mean, ver_5_var)
 
-data_sim_edg_1 = Edge_miss(unrot_means = rbind(ver_5_mean,ver_4_mean), 
-                           bias=unif_bias, n=n_e,bound=unif_bound)
-data_sim_edg_2 = Edge_miss(unrot_means =rbind(ver_3_mean,ver_2_mean), 
-                           bias=unif_bias, n=n_e,bound=unif_bound)
-data_sim_edg_3 = Edge_miss(unrot_means =rbind(ver_1_mean,ver_5_mean), 
-                           bias=unif_bias, n=n_e,bound=unif_bound)
-data_sim_edg_4 = Edge_miss(unrot_means=rbind(ver_1_mean,ver_3_mean), 
-                           bias=unif_bias, n=n_e,bound=unif_bound)
-data_sim_edg_5 = Edge_miss(unrot_means = rbind(ver_5_mean,ver_3_mean), 
-                           bias=unif_bias, n=n_e,bound=unif_bound)
+data_sim = rbind(data_sim_ver_1, data_sim_ver_2, data_sim_ver_3, 
+                 data_sim_ver_4, data_sim_ver_5)
 
-data_sim = rbind(data_sim_ver_1,data_sim_ver_2,data_sim_ver_3,
-                 data_sim_ver_4,
-                 data_sim_ver_5, data_sim_edg_1,
-                 data_sim_edg_2,data_sim_edg_3,data_sim_edg_4,
-                 data_sim_edg_5)
+N        = nrow(data_sim)
 
-xlim_sim_data = c(min(data_sim[,1]),max(data_sim[,1]))
-ylim_sim_data = c(min(data_sim[,2]),max(data_sim[,2]))
-xylim_sim     = c(min(xlim_sim_data,ylim_sim_data),
-                  max(xlim_sim_data,ylim_sim_data))
+xlim_sim_data = c(min(data_sim[,1]), max(data_sim[,1]))
+ylim_sim_data = c(min(data_sim[,2]), max(data_sim[,2]))
+xylim_sim     = c(min(xlim_sim_data, ylim_sim_data),
+                  max(xlim_sim_data, ylim_sim_data))
 
-Plot_extra3 = ggplot() +geom_point(data=data_plot_vertex, aes(x=X, y=Y))+
-  geom_point(data=data_plot_edge,aes(x=X, y=Y))+
-  xlab("Dim 1")+ylab("Dim 2")+labs(color="Vertex")+
-  geom_segment(data=Seg1, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg2, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg3, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg4, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg5, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  theme_bw()+theme(legend.position = "right", text = element_text(size=20))
-Plot_extra3
+data_plot           = data.frame(data_sim)
+
+Plot_extra4 = ggplot() + geom_point(data=data_plot, aes(x=X1, y=X2)) + 
+  labs(color="Vertex") + theme_bw() + xlab("Dim 1") + ylab("Dim 2") +
+  theme(legend.position = "right", text = element_text(size=20))
+Plot_extra4
 
 if(run_MCMC){
+  mu0       = colMeans(data_sim) 
   # Set the seed for reproducibility
   set.seed(123)
-  output_sim_2 = GARP_MCMC(data    = data_sim,
+  output_sim_3 = GARP_MCMC(data    = data_sim,
                            mu0     = mu0, 
                            kappa0  = kappa0,
                            nu0     = nu0,
@@ -553,11 +514,11 @@ if(run_MCMC){
                            Niter   = Niter,
                            Plot    = TRUE,
                            acc_p   = FALSE)
-  save(output_sim_2, file="./Data-and-Results/output_sim_2.RData")
+  save(output_sim_3, file="./Data-and-Results/output_sim_2.RData")
 } else {
   load("./Data-and-Results/output_sim_2.RData")
 }
-attach(output_sim_2)
+attach(output_sim_3)
 
 # Assign cells to vertex/edge phases
 p_s_i        = colMeans(stable_out[seq_thin,])
@@ -584,36 +545,38 @@ freq_clust_VI_stable
 dissimlar_stable = psm(cl_memb_all_out[seq_thin,is_i_stable])
 
 # Posterior probabilities of co-clustering of obs assigned to vertices.
-# (Figure S.4 b in the supplementary)
-Plot_S3b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
+# (Figure S.5 b in the supplementary)
+Plot_S5b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
                             N_S_map          = N_S_map)
 
 if(Save_Plot){
-  CairoPNG(filename = './Image/Prob_Coclus_obs_Sim_Data.png', 
+  CairoPNG(filename = './Image/Prob_Coclus_obs_Sim_Data_rev2.png', 
            width = 500, height = 400)}
-Plot_S3b
+Plot_S5b
 if(Save_Plot){invisible(dev.off())}
 
-# Edge assignments
-if(run_MCMC){
-  # Set the seed for reproducibility
-  set.seed(123)
-  output_sim_2_edge = GARP_Edge(y                   = y,
-                                is_i_stable         = is_i_stable, 
-                                c_clust_data_stable = c_clust_data_stable,
-                                kappa0              = kappa0,
-                                nu0                 = nu0,
-                                Lambda0             = Lambda0,
-                                Niter               = Niter,
-                                Plot                = TRUE)
-  
-  save(output_sim_2_edge, file="./Data-and-Results/output_sim_2_edge.RData")
-} else {
-  load("./Data-and-Results/output_sim_2_edge.RData")
+if(N_T_map>0){
+  # Edge assignments
+  if(run_MCMC){
+    # Set the seed for reproducibility
+    set.seed(123)
+    output_sim_3_edge = GARP_Edge(y                   = data_sim,
+                                  is_i_stable         = is_i_stable, 
+                                  c_clust_data_stable = c_clust_data_stable,
+                                  kappa0              = kappa0,
+                                  nu0                 = nu0,
+                                  Lambda0             = Lambda0,
+                                  Niter               = Niter,
+                                  Plot                = TRUE)
+    
+    save(output_sim_3_edge, file="./Data-and-Results/output_sim_3_edge.RData")
+  } else {
+    load("./Data-and-Results/output_sim_3_edge.RData")
+  }
+  attach(output_sim_3_edge)
 }
-attach(output_sim_2_edge)
 
-Plot_S4a = Plot_result_GARP_sim(y                   = y,
+Plot_S5a = Plot_result_GARP_sim(y                   = data_sim,
                                 is_i_stable         = is_i_stable, 
                                 clust_VI_stable     = clust_VI_stable,
                                 mu_stable_map       = mu_stable_map,
@@ -623,6 +586,6 @@ Plot_S4a = Plot_result_GARP_sim(y                   = y,
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim.png', 
                        width = 500, height = 400)}
-Plot_S4a
+Plot_S5a
 if(Save_Plot){invisible(dev.off())}
 
