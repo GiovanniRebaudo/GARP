@@ -128,7 +128,7 @@ y = data_sim
 N = nrow(y)
 
 # If you want to save the plot
-Save_Plot = F
+Save_Plot = T
 
 
 # Sim 1 scatter plot 
@@ -156,7 +156,7 @@ Lambda0   = diag(rep(150,P))
 
 # MCMC quantities
 Niter     = 1e4
-run_MCMC  = T
+run_MCMC  = FALSE
 if(run_MCMC){
   # Set the seed for reproducibility
   set.seed(123)
