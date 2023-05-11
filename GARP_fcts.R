@@ -112,7 +112,7 @@ edge_countorplot <- function(vertices = rbind(c(-2,-2), c(3,3)),
 }
 
 ## Function to implement MCMC
-GARP_MCMC <- function(data      = data,
+GARP_MCMC <- function(data      = y,
                       mu0       = mu0, 
                       kappa0    = kappa0,
                       nu0       = nu0,
@@ -122,6 +122,11 @@ GARP_MCMC <- function(data      = data,
                       Plot      = TRUE,
                       acc_p     = FALSE){
   verbose_step = max(round(Niter/20),1)
+  # it can be avoided by renaming
+  y            = data
+  N            = nrow(y)
+  P            = ncol(y)
+
     
   # Quantities where we save MCMC output
   stable_out         = matrix(nrow=Niter, ncol=N)
@@ -1078,4 +1083,49 @@ Boxplot_DE <- function(markers_cell = markers_cell){
                                   hjust=1), strip.text = element_text(size=30))
 }
 
+## Function to sample from the misspecified edge parameters 
+## given the location parameter of the two vertices
+Edge_miss <- function(unrot_means, n, bound, bias=0){
+  diff_mu     = unrot_means[1,]-unrot_means[2,]
+  if (all(diff_mu==0)){
+    rot_var     = diag(c(1, 1))
+    center_mean = unr[1,]
+    print("Error: distance is 0")
+    stop()
+  } else {
+    center_mean  = colMeans(unrot_means)
+    if (any(diff_mu==0)){
+      dist_xy   = sqrt(sum(diff_mu^2))
+      s2_11     = dist_xy/4
+      s2_22     = bound
+      
+      if (diff_mu[1]==0){
+        rot_var = diag(c(s2_22, s2_11))
+      } else {
+        rot_var = diag(c(s2_11, s2_22))
+      }
+    } else {
+      dist_xy   = sqrt(sum(diff_mu^2))
+      
+      diff_mu1 = diff_mu[1]
+      diff_mu2 = diff_mu[2]
 
+      cos_theta = ifelse(diff_mu1>0, sqrt(diff_mu1^2/(diff_mu1^2+diff_mu2^2)), 
+                         -sqrt(diff_mu1^2/(diff_mu1^2+diff_mu2^2)))
+      sin_theta = ifelse(diff_mu2>0, sqrt(diff_mu2^2/(diff_mu1^2+diff_mu2^2)), 
+                         -sqrt(diff_mu2^2/(diff_mu1^2+diff_mu2^2)))
+      
+      rot_mat       = matrix(c(cos_theta,sin_theta,-sin_theta,cos_theta),
+                             nrow=2,ncol=2)
+     
+      s2_11     = dist_xy/4
+      s2_22     = bound
+      
+      out = cbind(runif(n,min=-s2_11,max=s2_11),
+                  runif(n_e,min=-bound,max=bound))%*%t(rot_mat) +
+        matrix(center_mean+bias,nrow=n,ncol=2,byrow=T)
+      
+    }
+  }
+  return(out)
+}

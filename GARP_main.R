@@ -31,7 +31,7 @@ P = ncol(y)
 N = nrow(y)
 
 # If you want to save the plot
-Save_Plot = TRUE
+Save_Plot = FALSE #TRUE
 
 # Data scatter plot (Figure 1 in the main manuscript)
 Plot_1 = pre_plot(y)
@@ -70,7 +70,7 @@ if(run_MCMC){
   # Set the seed for reproducibility
   set.seed(123)
  # pt1 = proc.time() # compute time
-  output = GARP_MCMC(data    = data,
+  output = GARP_MCMC(data    = y,
                      mu0     = mu0, 
                      kappa0  = kappa0,
                      nu0     = nu0,
