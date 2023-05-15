@@ -26,6 +26,9 @@ library(dplyr)         # version 1.1.1
 source("GARP_fcts.R")
 set.seed(123)
 
+# If you want to save the plot
+Save_Plot = TRUE
+
 ## Sim 1
 P = 2
 ver_1_mean = c(7,0)
@@ -105,19 +108,19 @@ Plot_S2 = ggplot() +geom_point(data=data_plot_vertex, aes(x=X,y=Y))+
   geom_point(data=data_plot_edge,aes(x=X,y=Y))+
   xlab("Dim 1")+ylab("Dim 2")+labs(color="Vertex")+
   geom_segment(data=Seg1, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
+               col="red",alpha=3, size=1)+
   geom_segment(data=Seg2, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
+               col="red",alpha=3, size=1)+
   geom_segment(data=Seg3, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
+               col="red",alpha=3, size=1)+
   geom_segment(data=Seg4, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
+               col="red",alpha=3, size=1)+
   geom_segment(data=Seg5, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
+               col="red",alpha=3, size=1)+
   theme_bw()+theme(legend.position = "right", text = element_text(size=20))
 
 # If you want to save the plot
-Save_Plot = FALSE #TRUE
+Save_Plot = TRUE
 
 if(Save_Plot){CairoPNG(filename = './Image/Data_sim.png', width = 500, 
                        height = 400)}
@@ -126,9 +129,6 @@ if(Save_Plot){invisible(dev.off())}
 
 y = data_sim
 N = nrow(y)
-
-# If you want to save the plot
-Save_Plot = T
 
 
 # Sim 1 scatter plot 
@@ -156,7 +156,7 @@ Lambda0   = diag(rep(150,P))
 
 # MCMC quantities
 Niter     = 1e4
-run_MCMC  = FALSE
+run_MCMC  = TRUE #FALSE
 if(run_MCMC){
   # Set the seed for reproducibility
   set.seed(123)
@@ -302,8 +302,7 @@ if(Save_Plot){invisible(dev.off())}
 
 Plot_extra2 = Plot_result_GARP(y                   = y,
                                is_i_stable         = rep(1, nrow(y)), 
-                               clust_VI_stable     = clust_VI_stable
-)
+                               clust_VI_stable     = clust_VI_stable)
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_sim_1_ver.png',
                        width = 500, height = 400)}
@@ -311,6 +310,7 @@ Plot_extra2
 if(Save_Plot){invisible(dev.off())}
 
 ## Sim 2
+rm(output_sim_1,output_sim_1_edge,output_sim_1_ind)
 # Run the MCMC sim 2------------------------------------------------------------
 set.seed(123)
 ver_1_mean = c(0,7)
@@ -358,20 +358,8 @@ ylim_sim_data = c(min(data_sim[,2]),max(data_sim[,2]))
 xylim_sim     = c(min(xlim_sim_data,ylim_sim_data), 
                   max(xlim_sim_data,ylim_sim_data))
 
-Plot_extra3 = ggplot() +geom_point(data=data_plot_vertex, aes(x=X, y=Y))+
-  geom_point(data=data_plot_edge,aes(x=X, y=Y))+
-  xlab("Dim 1")+ylab("Dim 2")+labs(color="Vertex")+
-  geom_segment(data=Seg1, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg2, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg3, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg4, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  geom_segment(data=Seg5, mapping =aes(x = y, y = x, xend = yend, yend = xend),
-               col="red",alpha=3,size=1)+
-  theme_bw()+theme(legend.position = "right", text = element_text(size=20))
+Plot_extra3 = ggplot() +geom_point(data=data.frame(data_sim), aes(x=X1, y=X2))+
+  xlab("Dim 1")+ylab("Dim 2")
 Plot_extra3
 
 if(run_MCMC){
@@ -392,7 +380,6 @@ if(run_MCMC){
   load("./Data-and-Results/output_sim_2.RData")
 }
 attach(output_sim_2)
-
 # Assign cells to vertex/edge phases
 p_s_i        = colMeans(stable_out[seq_thin,])
 is_i_stable  = (p_s_i>0.5)
@@ -419,13 +406,13 @@ dissimlar_stable = psm(cl_memb_all_out[seq_thin,is_i_stable])
 
 # Posterior probabilities of co-clustering of obs assigned to vertices.
 # (Figure S.4 b in the supplementary)
-Plot_S3b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
+Plot_S4b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
                             N_S_map          = N_S_map)
 
 if(Save_Plot){
-  CairoPNG(filename = './Image/Prob_Coclus_obs_Sim_Data.png', 
+  CairoPNG(filename = './Image/Prob_Coclus_obs_Sim_Data_Rev.png', 
            width = 500, height = 400)}
-Plot_S3b
+Plot_S4b
 if(Save_Plot){invisible(dev.off())}
 
 # Edge assignments
@@ -455,13 +442,14 @@ Plot_S4a = Plot_result_GARP_sim(y                   = y,
                                 cl_memb_edge_out    = cl_memb_edge_out)
 
 
-if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim.png', 
+if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim_Rev.png', 
                        width = 500, height = 400)}
 Plot_S4a
 if(Save_Plot){invisible(dev.off())}
 
 
 ## Sim 3
+rm(output_sim_2, output_sim_2_edge)
 # Run the MCMC sim 3------------------------------------------------------------
 set.seed(123)
 ver_1_mean = c(0,7)
@@ -514,9 +502,9 @@ if(run_MCMC){
                            Niter   = Niter,
                            Plot    = TRUE,
                            acc_p   = FALSE)
-  save(output_sim_3, file="./Data-and-Results/output_sim_2.RData")
+  save(output_sim_3, file="./Data-and-Results/output_sim_3.RData")
 } else {
-  load("./Data-and-Results/output_sim_2.RData")
+  load("./Data-and-Results/output_sim_3.RData")
 }
 attach(output_sim_3)
 
@@ -584,7 +572,7 @@ Plot_S5a = Plot_result_GARP_sim(y                   = data_sim,
                                 cl_memb_edge_out    = cl_memb_edge_out)
 
 
-if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim.png', 
+if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim_rev2.png', 
                        width = 500, height = 400)}
 Plot_S5a
 if(Save_Plot){invisible(dev.off())}

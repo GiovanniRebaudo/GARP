@@ -966,7 +966,7 @@ Plot_result_GARP_sim <- function(y                   = y,
     data_plot              = data.frame(y[is_i_stable,])
     data_plot_edge         = data.frame(y[!is_i_stable,])
   
-    Segment_data           = matrix(nrow=K_T_max,ncol=4)
+    Segment_data           = matrix(nrow=K_T_max, ncol=4)
     colnames(Segment_data) = c("x","y","xend","yend")
   
     for(ind in 1:K_T_max){
@@ -987,8 +987,10 @@ Plot_result_GARP_sim <- function(y                   = y,
     Seg9  = data.frame(t(Segment_data[9,]))
     Seg10 = data.frame(t(Segment_data[10,]))
   
-    Alpha = table(cl_memb_edge_out[seq_thin,])
-    Alpha = Alpha/max(Alpha)*100
+    Alpha                          = rep(0, K_T_max)
+    temp                           = table(cl_memb_edge_out[seq_thin,])
+    Alpha[as.integer(names(temp))] = temp
+    Alpha                          = Alpha/max(Alpha)*100
   
     Main_phases          = factor(clust_VI_stable)
     Edge                 = factor(apply(cl_memb_edge_out[seq_thin,],2,Mode))
@@ -1008,7 +1010,8 @@ Plot_result_GARP_sim <- function(y                   = y,
     data_plot_all$Vi         = factor(c(rep(1,length(Main_phases)), 
                                         rep(0,length(Edge))))
     Plot = ggplot() +
-      geom_point(data=data_plot_all,aes(x=MDS1, y=MDS2,col=all_phases, shape=Vi))+
+      geom_point(data=data_plot_all, 
+                 aes(x=MDS1, y=MDS2, col=all_phases, shape=Vi))+
       geom_segment(data=Seg1, mapping =aes(x= x, y = y, xend=xend, yend=yend),
                    col="black", alpha=Alpha[1])+
       geom_segment(data=Seg2, mapping=aes(x=x, y=y, xend=xend,yend=yend),

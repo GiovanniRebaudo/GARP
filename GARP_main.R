@@ -123,7 +123,7 @@ Plot_2b = Plot_heat_vertex(dissimlar_stable = dissimlar_stable,
                            N_S_map          = N_S_map)
 
 if(Save_Plot){
-  CairoPNG(filename = './Image/Prob_Coclus_obs_Mice_Data_Orange.png', 
+  CairoPNG(filename = './Image/Prob_Coclus_obs_Mice_Data.png', 
            width = 500, height = 400)}
 Plot_2b
 if(Save_Plot){invisible(dev.off())}
