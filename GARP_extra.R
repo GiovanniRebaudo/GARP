@@ -156,7 +156,7 @@ Lambda0   = diag(rep(150,P))
 
 # MCMC quantities
 Niter     = 1e4
-run_MCMC  = TRUE #FALSE
+run_MCMC  = FALSE
 if(run_MCMC){
   # Set the seed for reproducibility
   set.seed(123)
