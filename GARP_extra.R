@@ -21,6 +21,7 @@ library(bayesm)        # version 3.1-5
 library(mniw)          # version 1.0.1
 library(xtable)        # version 1.8-4
 library(dplyr)         # version 1.1.1
+library(ggpubr)        # version 0.6.0
 
 # Load functions
 source("GARP_fcts.R")
@@ -129,7 +130,6 @@ if(Save_Plot){invisible(dev.off())}
 
 y = data_sim
 N = nrow(y)
-
 
 # Sim 1 scatter plot 
 # (Figure S.2 in the supplementary materials)
@@ -245,7 +245,7 @@ Plot_S3a = Plot_result_GARP_sim(y                   = y,
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim.png', 
                        width = 500, height = 400)}
-Plot_S3a
+Plot_S3a + ggpubr::color_palette("jco")
 if(Save_Plot){invisible(dev.off())}
 
 # Run the MCMC of RPM with independent atoms (non graph-aligned) ---------------
@@ -306,7 +306,7 @@ Plot_extra2 = Plot_result_GARP(y                   = y,
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_sim_1_ver.png',
                        width = 500, height = 400)}
-Plot_extra2
+Plot_extra2 + ggpubr::color_palette("jco")
 if(Save_Plot){invisible(dev.off())}
 
 ## Sim 2
@@ -444,9 +444,8 @@ Plot_S4a = Plot_result_GARP_sim(y                   = y,
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim_Rev.png', 
                        width = 500, height = 400)}
-Plot_S4a
+Plot_S4a + ggpubr::color_palette("jco")
 if(Save_Plot){invisible(dev.off())}
-
 
 ## Sim 3
 rm(output_sim_2, output_sim_2_edge)
@@ -574,6 +573,6 @@ Plot_S5a = Plot_result_GARP_sim(y                   = data_sim,
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Sim_rev2.png', 
                        width = 500, height = 400)}
-Plot_S5a
+Plot_S5a + ggpubr::color_palette("jco")
 if(Save_Plot){invisible(dev.off())}
 

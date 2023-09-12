@@ -21,6 +21,8 @@ library(LaplacesDemon) # version 16.1.6
 library(bayesm)        # version 3.1-5
 library(mniw)          # version 1.0.1
 library(xtable)        # version 1.8-4
+library(ggpubr)        # version 0.6.0
+
 
 # Load functions
 source("GARP_fcts.R")
@@ -158,7 +160,9 @@ Plot_2a = Plot_result_GARP(y                   = y,
 )
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Mice.png', 
                        width = 500, height = 400)}
-Plot_2a
+# Plot_2a
+# Change the color palette
+set_palette(Plot_2a, "jco")
 if(Save_Plot){invisible(dev.off())}
 
 # Posterior distribution of the number of vertex: K_v
@@ -212,7 +216,9 @@ Table_3[-1,]
 # Heatmap of the log mean expressions in top 6 DE genes in the main phases.
 # (Figure 3 in the main manuscript)
 Plot_3  = Plot_heat_DE_main(Plot_Mark = Plot_Mark)
-Plot_3
+Plot_3  
+# Change the color palette
+set_palette(Plot_3, "jco")
 if(Save_Plot){
 ggsave(filename='./Image/heatmap_subset.png', plot=Plot_3, device="png",
        width = 15, height = 10, units="cm")}
@@ -229,7 +235,7 @@ if(Save_Plot){ggsave(filename='./Image/Heatmap_all_cells_DE.png', plot=Plot_4L,
 # Boxplot genetic expressions (after log(· + 1) transformation) 
 # in the top 6 DE genes in all cells in the different main phases
 # (Right panel of figure 4 in the main manuscript)
-Plot_4R = Boxplot_DE(markers_cell = markers_cell)
+Plot_4R = Boxplot_DE(markers_cell = markers_cell) + ggpubr::color_palette("jco")
 if(Save_Plot){ggsave(filename='./Image/Boxplot_DE.png', plot=Plot_4R, 
                      device="png", width = 15, height = 17, units="cm")}
 
@@ -292,7 +298,7 @@ Plot_5a = Plot_result_GARP(y                   = y,
 
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Mice_Orange.png',
                        width = 500, height = 400)}
-Plot_5a
+Plot_5a+ggpubr::color_palette("jco")
 if(Save_Plot){invisible(dev.off())}
 
 # Posterior distribution of the number of vertex: K_v
