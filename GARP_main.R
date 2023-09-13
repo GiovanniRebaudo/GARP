@@ -217,8 +217,6 @@ Table_3[-1,]
 # (Figure 3 in the main manuscript)
 Plot_3  = Plot_heat_DE_main(Plot_Mark = Plot_Mark)
 Plot_3  
-# Change the color palette
-set_palette(Plot_3, "jco")
 if(Save_Plot){
 ggsave(filename='./Image/heatmap_subset.png', plot=Plot_3, device="png",
        width = 15, height = 10, units="cm")}
@@ -305,3 +303,4 @@ if(Save_Plot){invisible(dev.off())}
 # (Table 4 - independent atoms RPM - in the main manuscript)
 Table_4_b = Freq_Kv(cl_samp=cl_memb_stable_out[seq_thin,])
 # xtable(t(Table_4_b),digits = 4)
+
