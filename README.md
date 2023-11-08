@@ -23,7 +23,7 @@ The repository contains the following:
 3. `Data-and-Results` folder with data and results of the analyses.
 
 #### Questions or bugs
-For bug reporting purposes, e-mail [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@gmail.com)
+For bug reporting purposes, e-mail [Giovanni Rebaudo](https://giovannirebaudo.github.io) (rebaudo.giovanni@gmail.com)
 
 #### Citation
 Please cite the following publication if you use this repository in your research: [Rebaudo, G. and Müller, P. (2023). Graph-aligned Random Partition Model (GARP). Submitted.](https://arxiv.org/abs/2306.08485)
