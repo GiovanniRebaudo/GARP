@@ -160,8 +160,8 @@ Plot_2a = Plot_result_GARP(y                   = y,
 )
 if(Save_Plot){CairoPNG(filename = './Image/Inference_Scatter_Mice.png', 
                        width = 500, height = 400)}
-# Plot_2a
 # Change the color palette
+Plot_2a
 set_palette(Plot_2a, "jco")
 if(Save_Plot){invisible(dev.off())}
 

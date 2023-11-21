@@ -735,12 +735,13 @@ GARP_MCMC <- function(data      = y,
 ## of obs assigned to vertices
 Plot_heat_vertex <- function(dissimlar_stable = dissimlar_stable,
                              N_S_map          = N_S_map){
-  dismat      = round(dissimlar_stable,2)
-  dismat      = reorder_dismat(dismat,groups=rep(1,N_S_map))
+  dismat      = round(dissimlar_stable, 2)
+  dismat      = reorder_dismat(dismat,groups=rep(1, N_S_map))
   plot_dismat = reshape2::melt(dismat)
   ggplot(data=plot_dismat, aes(x=factor(Var1), y=factor(Var2), fill=value))+ 
-    geom_tile()+ theme_bw()+ 
-    scale_y_discrete(breaks = floor(seq(1,N_S_map,length.out = 9)), 
+    geom_tile() + theme_bw()+ 
+    scale_y_discrete(limits = seq(N_S_map, 1),
+                     breaks = floor(seq(1,N_S_map,length.out = 9)), 
                      labels = floor(seq(1,N_S_map,length.out = 9))) +
     scale_x_discrete(breaks = floor(seq(1,N_S_map,length.out = 9)), 
                      labels = floor(seq(1,N_S_map,length.out = 9))) +
